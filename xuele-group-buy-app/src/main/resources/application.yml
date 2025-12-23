@@ -1,0 +1,5 @@
+spring:
+  config:
+    name: xuele-group-buy-app
+  profiles:
+    active: dev
