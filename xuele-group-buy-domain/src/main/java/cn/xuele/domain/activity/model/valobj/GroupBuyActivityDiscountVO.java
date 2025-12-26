@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 /**
  * 拼团活动配置聚合对象 (Activity + Discount)
@@ -73,7 +72,7 @@ public class GroupBuyActivityDiscountVO {
         private String discountDesc;
 
         /** 折扣类型（0:base、1:tag） */
-        private Integer discountType;
+        private DiscountTypeEnum discountType;
 
         /** * 营销计划 (核心策略标识)
          * ZJ:直减, MJ:满减, N:N元购

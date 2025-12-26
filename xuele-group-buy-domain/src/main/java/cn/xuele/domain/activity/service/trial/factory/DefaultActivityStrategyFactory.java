@@ -13,6 +13,8 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+
 /**
  * 活动策略工厂 (默认实现)
  * <p>
@@ -51,7 +53,6 @@ public class DefaultActivityStrategyFactory {
      * - MarketProductEntity (入参)：前端传来的，不可变。
      * - DynamicContext (上下文)：后端查出来的，随着节点流转可能会被填充数据。
      */
-    //@AllArgsConstructor
     @NoArgsConstructor
     @AllArgsConstructor
     @Data
@@ -59,5 +60,7 @@ public class DefaultActivityStrategyFactory {
     public static class DynamicContext {
         private GroupBuyActivityDiscountVO groupBuyActivityDiscountVO;
         private SkuVO skuVO;
+        private BigDecimal deductionPrice;
+        private BigDecimal payPrice;
     }
 }

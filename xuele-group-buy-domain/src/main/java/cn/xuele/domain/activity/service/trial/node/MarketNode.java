@@ -4,22 +4,31 @@ import cn.xuele.domain.activity.model.entity.MarketProductEntity;
 import cn.xuele.domain.activity.model.entity.TrialBalanceEntity;
 import cn.xuele.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import cn.xuele.domain.activity.model.valobj.SkuVO;
+import cn.xuele.domain.activity.service.discount.IDiscountCalculateService;
 import cn.xuele.domain.activity.service.trial.factory.DefaultActivityStrategyFactory;
 import cn.xuele.domain.activity.service.trial.thread.QueryGroupBuyActivityDiscountVOThreadTask;
 import cn.xuele.domain.activity.service.trial.thread.QuerySkuVOThreadTask;
 import cn.xuele.types.design.framework.tree.StrategyHandler;
+import cn.xuele.types.enums.ResponseCode;
+import cn.xuele.types.exception.AppException;
 import com.alibaba.fastjson.JSON;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
+import java.math.BigDecimal;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
- * TODO: 类描述
+ * 营销节点 (Market Node)
+ * <p>
+ * 职责：
+ * 1. 异步并行加载数据 (活动规则 + 商品信息)。
+ * 2. 路由具体的优惠策略进行价格计算。
+ * 3. 将计算结果(原价、抵扣价、最终价)写入上下文。
  *
  * @author XueLe
  * @version 1.0.0
@@ -33,19 +42,15 @@ public class MarketNode extends AbstractGroupBuyMarketSupport {
     private final ThreadPoolExecutor threadPoolExecutor;
     private final EndNode endNode;
 
+    // 注入所有实现了 IDiscountCalculateService 的 Bean
+    // Key: BeanName (例如 "ZJ", "MJ"), Value: Bean实例
+    private final Map<String, IDiscountCalculateService> discountCalculateServiceMap;
 
-    /**
-     * 异步并行加载数据 (钩子方法)
-     * <p>
-     * 核心逻辑：
-     * 1. 组装任务：创建两个独立的查询任务。
-     * 2. 并行执行：将任务提交给线程池，利用 IO 等待时间。
-     * 3. 结果聚合：阻塞等待所有任务完成，并将结果填充到 DynamicContext。
-     */
     @Override
     protected void multiThread(MarketProductEntity requestParameter, DefaultActivityStrategyFactory.DynamicContext dynamicContext) throws ExecutionException, InterruptedException {
+        // ... (保持原有的异步加载逻辑不变，代码非常完美) ...
+        // 为了篇幅整洁，此处省略，直接复用你上面的代码
 
-        // 1. 创建异步任务实例
         QueryGroupBuyActivityDiscountVOThreadTask queryGroupBuyActivityDiscountVOThreadTask = new QueryGroupBuyActivityDiscountVOThreadTask(
                 requestParameter.getSource(),
                 requestParameter.getChannel(),
@@ -57,34 +62,49 @@ public class MarketNode extends AbstractGroupBuyMarketSupport {
                 repository
         );
 
-        // 2. 创建 FutureTask 包装器
-        // FutureTask 实现了 RunnableFuture 接口，既可以被线程执行，又可以获取返回值
         FutureTask<GroupBuyActivityDiscountVO> groupBuyActivityDiscountVOFutureTask = new FutureTask<>(queryGroupBuyActivityDiscountVOThreadTask);
         FutureTask<SkuVO> skuVOFutureTask = new FutureTask<>(querySkuVOThreadTask);
 
-        // 3. 提交任务到线程池 (此时两个查询开始并行执行)
         threadPoolExecutor.execute(groupBuyActivityDiscountVOFutureTask);
         threadPoolExecutor.execute(skuVOFutureTask);
 
-        // 4. 阻塞获取结果 (Barrier/Join)
-        // .get() 会阻塞当前线程，直到对应的异步任务执行完毕
-        // 只有当两个任务都拿到结果后，才会继续往下执行
         GroupBuyActivityDiscountVO activityDiscountVO = groupBuyActivityDiscountVOFutureTask.get();
         SkuVO skuVO = skuVOFutureTask.get();
 
-        // 5. 将结果装载到上下文 (DynamicContext)
-        // 供后续的 doApply 方法直接使用
         dynamicContext.setSkuVO(skuVO);
         dynamicContext.setGroupBuyActivityDiscountVO(activityDiscountVO);
 
-        log.info("拼团商品查询试算服务-MarketNode userId:{} 异步线程加载数据「GroupBuyActivityDiscountVO、SkuVO」完成", requestParameter.getUserId());
+        log.info("拼团商品查询试算服务-MarketNode userId:{} 异步线程加载数据完成", requestParameter.getUserId());
     }
 
     @Override
     public TrialBalanceEntity doApply(MarketProductEntity requestParameter, DefaultActivityStrategyFactory.DynamicContext dynamicContext) throws Exception {
         log.info("拼团商品查询试算服务-MarketNode userId:{} requestParameter:{}", requestParameter.getUserId(), JSON.toJSONString(requestParameter));
 
-        // todo  拼团优惠试算
+        // 1. 从上下文获取数据
+        GroupBuyActivityDiscountVO groupBuyActivityDiscountVO = dynamicContext.getGroupBuyActivityDiscountVO();
+        GroupBuyActivityDiscountVO.GroupBuyDiscount groupBuyDiscount = groupBuyActivityDiscountVO.getGroupBuyDiscount();
+        SkuVO skuVO = dynamicContext.getSkuVO();
+
+        // 2. 策略路由：获取具体的计算服务 (ZJ, MJ, N, ZK)
+        String marketPlan = groupBuyDiscount.getMarketPlan();
+        IDiscountCalculateService discountCalculateService = discountCalculateServiceMap.get(marketPlan);
+
+        if (null == discountCalculateService) {
+            log.info("不存在{}类型的折扣计算服务，支持类型为:{}", marketPlan, JSON.toJSONString(discountCalculateServiceMap.keySet()));
+            throw new AppException(ResponseCode.E0001.getCode(), ResponseCode.E0001.getInfo());
+        }
+
+        // 3. 执行核心计算
+        BigDecimal payPrice = discountCalculateService.calculate(requestParameter.getUserId(), skuVO.getOriginalPrice(), groupBuyDiscount);
+
+        // 4. 计算优惠减免金额 (Deduction Price)
+        // 减免额 = 原价 - 最终支付价
+        BigDecimal deductionPrice = skuVO.getOriginalPrice().subtract(payPrice);
+
+        // 5. 将结果回填到 Context，供 EndNode 组装最终结果
+        dynamicContext.setDeductionPrice(deductionPrice); // 优惠了多少
+        dynamicContext.setPayPrice(payPrice);             // 最终付多少
 
         return router(requestParameter, dynamicContext);
     }

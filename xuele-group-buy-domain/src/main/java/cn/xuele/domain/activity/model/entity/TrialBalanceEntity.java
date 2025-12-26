@@ -43,6 +43,11 @@ public class TrialBalanceEntity {
      */
     private BigDecimal deductionPrice;
 
+    /**
+     * 支付价格
+     */
+    private BigDecimal payPrice;
+
     /** * 拼团目标数量
      * 作用：用于前端展示进度条或文案（例：“还差2人成团”）。
      */
