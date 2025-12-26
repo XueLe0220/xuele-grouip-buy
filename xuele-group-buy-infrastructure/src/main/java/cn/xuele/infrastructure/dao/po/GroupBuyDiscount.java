@@ -1,6 +1,5 @@
 package cn.xuele.infrastructure.dao.po;
 
-import cn.xuele.domain.activity.model.valobj.DiscountTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
