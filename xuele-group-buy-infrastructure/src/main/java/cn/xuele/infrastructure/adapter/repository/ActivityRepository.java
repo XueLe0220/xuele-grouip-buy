@@ -1,5 +1,6 @@
 package cn.xuele.infrastructure.adapter.repository;
 
+
 import cn.xuele.domain.activity.adapter.repository.IActivityRepository;
 import cn.xuele.domain.activity.model.valobj.DiscountTypeEnum;
 import cn.xuele.domain.activity.model.valobj.GroupBuyActivityDiscountVO;

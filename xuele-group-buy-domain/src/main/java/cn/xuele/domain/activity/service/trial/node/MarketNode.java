@@ -5,6 +5,7 @@ import cn.xuele.domain.activity.model.entity.TrialBalanceEntity;
 import cn.xuele.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import cn.xuele.domain.activity.model.valobj.SkuVO;
 import cn.xuele.domain.activity.service.discount.IDiscountCalculateService;
+import cn.xuele.domain.activity.service.trial.AbstractGroupBuyMarketSupport;
 import cn.xuele.domain.activity.service.trial.factory.DefaultActivityStrategyFactory;
 import cn.xuele.domain.activity.service.trial.thread.QueryGroupBuyActivityDiscountVOThreadTask;
 import cn.xuele.domain.activity.service.trial.thread.QuerySkuVOThreadTask;
@@ -41,15 +42,11 @@ public class MarketNode extends AbstractGroupBuyMarketSupport {
 
     private final ThreadPoolExecutor threadPoolExecutor;
     private final EndNode endNode;
-
-    // 注入所有实现了 IDiscountCalculateService 的 Bean
     // Key: BeanName (例如 "ZJ", "MJ"), Value: Bean实例
     private final Map<String, IDiscountCalculateService> discountCalculateServiceMap;
 
     @Override
     protected void multiThread(MarketProductEntity requestParameter, DefaultActivityStrategyFactory.DynamicContext dynamicContext) throws ExecutionException, InterruptedException {
-        // ... (保持原有的异步加载逻辑不变，代码非常完美) ...
-        // 为了篇幅整洁，此处省略，直接复用你上面的代码
 
         QueryGroupBuyActivityDiscountVOThreadTask queryGroupBuyActivityDiscountVOThreadTask = new QueryGroupBuyActivityDiscountVOThreadTask(
                 requestParameter.getSource(),

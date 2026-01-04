@@ -17,7 +17,7 @@ import java.math.BigDecimal;
  * @version 1.0.0
  * @since 2025/12/25 15:55
  */
-public abstract class AbstractDiscountCalculateService implements IDiscountCalculateService {
+    public abstract class AbstractDiscountCalculateService implements IDiscountCalculateService {
 
     /**
      * 模板方法：定义计算骨架

@@ -4,7 +4,10 @@ import cn.xuele.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import cn.xuele.domain.activity.model.valobj.SkuVO;
 
 /**
- * TODO: 类描述
+ * 活动领域仓储接口
+ * <p>
+ * 负责拼团活动相关数据的查询。
+ * 将基础设施层的数据访问能力暴露给 Domain 层使用。
  *
  * @author XueLe
  * @version 1.0.0
@@ -12,7 +15,13 @@ import cn.xuele.domain.activity.model.valobj.SkuVO;
  */
 public interface IActivityRepository {
 
+    /**
+     * 查询拼团活动的优惠配置
+     */
     GroupBuyActivityDiscountVO queryGroupBuyActivityDiscountVO(String source, String channel);
 
+    /**
+     * 根据商品ID查询商品SKU信息
+     */
     SkuVO querySkuByGoodsId(String goodsId);
 }

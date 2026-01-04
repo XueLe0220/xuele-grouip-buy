@@ -1,4 +1,4 @@
-package cn.xuele.domain.activity.service.trial.node;
+package cn.xuele.domain.activity.service.trial;
 
 import cn.xuele.domain.activity.adapter.repository.IActivityRepository;
 import cn.xuele.domain.activity.model.entity.MarketProductEntity;
@@ -6,7 +6,7 @@ import cn.xuele.domain.activity.model.entity.TrialBalanceEntity;
 import cn.xuele.domain.activity.service.trial.factory.DefaultActivityStrategyFactory;
 import cn.xuele.types.design.framework.tree.AbstractMultiThreadStrategyRouter;
 
-import javax.annotation.Resource;
+import jakarta.annotation.Resource;
 import java.util.concurrent.ExecutionException;
 
 /**

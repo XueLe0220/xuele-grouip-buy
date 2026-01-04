@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 拼团活动配置聚合对象 (Activity + Discount)
+ * 拼团活动配置聚合值对象 (Activity + Discount)
  * <p>
  * 聚合了"活动规则"与"折扣配置"，作为营销试算的核心规则载体。
  *

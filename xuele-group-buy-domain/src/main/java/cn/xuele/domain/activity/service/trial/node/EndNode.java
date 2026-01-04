@@ -4,6 +4,7 @@ import cn.xuele.domain.activity.model.entity.MarketProductEntity;
 import cn.xuele.domain.activity.model.entity.TrialBalanceEntity;
 import cn.xuele.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import cn.xuele.domain.activity.model.valobj.SkuVO;
+import cn.xuele.domain.activity.service.trial.AbstractGroupBuyMarketSupport;
 import cn.xuele.domain.activity.service.trial.factory.DefaultActivityStrategyFactory;
 import cn.xuele.types.design.framework.tree.StrategyHandler;
 import com.alibaba.fastjson.JSON;
@@ -12,7 +13,10 @@ import org.springframework.stereotype.Service;
 
 
 /**
- * TODO: 类描述
+ * 拼团试算流程 - 结束节点 (EndNode)
+ * <p>
+ * 责任链/规则树模式的最后一个环节。
+ * 负责将之前节点计算好的上下文数据（Context），组装成最终的“试算结果实体”返回给上层。
  *
  * @author XueLe
  * @version 1.0.0

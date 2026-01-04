@@ -2,6 +2,7 @@ package cn.xuele.domain.activity.service.trial.node;
 
 import cn.xuele.domain.activity.model.entity.MarketProductEntity;
 import cn.xuele.domain.activity.model.entity.TrialBalanceEntity;
+import cn.xuele.domain.activity.service.trial.AbstractGroupBuyMarketSupport;
 import cn.xuele.domain.activity.service.trial.factory.DefaultActivityStrategyFactory;
 import cn.xuele.types.design.framework.tree.StrategyHandler;
 import lombok.RequiredArgsConstructor;

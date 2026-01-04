@@ -27,7 +27,7 @@ public class QueryGroupBuyActivityDiscountVOThreadTask implements Callable<Group
     /** 查询参数：渠道 */
     private final String channel;
 
-    /** 仓储接口 (从外部注入，通常是 Spring 管理的 Bean) */
+    /** 仓储接口  */
     private final IActivityRepository repository;
 
     /**
