@@ -1,6 +1,7 @@
 package cn.xuele.domain.activity.adapter.repository;
 
 import cn.xuele.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
+import cn.xuele.domain.activity.model.valobj.SCSkuActivityVO;
 import cn.xuele.domain.activity.model.valobj.SkuVO;
 
 /**
@@ -18,10 +19,15 @@ public interface IActivityRepository {
     /**
      * 查询拼团活动的优惠配置
      */
-    GroupBuyActivityDiscountVO queryGroupBuyActivityDiscountVO(String source, String channel);
+    GroupBuyActivityDiscountVO queryGroupBuyActivityDiscountVO(Long activityId);
 
     /**
      * 根据商品ID查询商品SKU信息
      */
     SkuVO querySkuByGoodsId(String goodsId);
+
+    /**
+     * 根据商品ID查询商品与活动的关联信息
+     */
+    SCSkuActivityVO querySCSkuActivityBySCGoodsId(String goodsId);
 }

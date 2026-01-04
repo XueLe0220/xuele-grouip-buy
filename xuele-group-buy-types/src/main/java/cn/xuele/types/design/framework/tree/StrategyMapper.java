@@ -17,5 +17,5 @@ public interface StrategyMapper<T, D, R> {
      * @param dynamicContext   动态上下文
      * @return 匹配到的策略处理器，如果未匹配则可能返回 null
      */
-    StrategyHandler<T, D, R> get(T requestParameter, D dynamicContext);
+    StrategyHandler<T, D, R> get(T requestParameter, D dynamicContext) throws Exception;
 }

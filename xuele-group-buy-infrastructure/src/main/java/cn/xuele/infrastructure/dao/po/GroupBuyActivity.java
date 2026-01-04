@@ -33,15 +33,6 @@ public class GroupBuyActivity {
     /** 活动名称 */
     private String activityName;
 
-    /** 来源 */
-    private String source;
-
-    /** 渠道 */
-    private String channel;
-
-    /** 商品ID */
-    private String goodsId;
-
     /** 折扣ID (注意：建议与 Discount 表统一类型) */
     private String discountId;
 

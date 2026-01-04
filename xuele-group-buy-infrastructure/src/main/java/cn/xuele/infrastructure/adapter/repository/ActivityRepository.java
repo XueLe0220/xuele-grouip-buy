@@ -4,12 +4,15 @@ package cn.xuele.infrastructure.adapter.repository;
 import cn.xuele.domain.activity.adapter.repository.IActivityRepository;
 import cn.xuele.domain.activity.model.valobj.DiscountTypeEnum;
 import cn.xuele.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
+import cn.xuele.domain.activity.model.valobj.SCSkuActivityVO;
 import cn.xuele.domain.activity.model.valobj.SkuVO;
 import cn.xuele.infrastructure.dao.IGroupBuyActivityDao;
 import cn.xuele.infrastructure.dao.IGroupBuyDiscountDao;
+import cn.xuele.infrastructure.dao.ISCSkuActivityDao;
 import cn.xuele.infrastructure.dao.ISkuDao;
 import cn.xuele.infrastructure.dao.po.GroupBuyActivity;
 import cn.xuele.infrastructure.dao.po.GroupBuyDiscount;
+import cn.xuele.infrastructure.dao.po.SCSkuActivity;
 import cn.xuele.infrastructure.dao.po.Sku;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,13 +38,12 @@ public class ActivityRepository implements IActivityRepository {
     private final IGroupBuyActivityDao groupBuyActivityDao;
     private final IGroupBuyDiscountDao groupBuyDiscountDao;
     private final ISkuDao skuDao;
+    private final ISCSkuActivityDao skuActivityDao;
 
     @Override
-    public GroupBuyActivityDiscountVO queryGroupBuyActivityDiscountVO(String source, String channel) {
-        // 1. 构建查询参数对象 (体现了扩展性，后续若需增加查询条件，接口签名无需修改)
+    public GroupBuyActivityDiscountVO queryGroupBuyActivityDiscountVO(Long activityId) {
+        // 1. 构建查询参数对象
         GroupBuyActivity groupBuyActivityReq = new GroupBuyActivity();
-        groupBuyActivityReq.setSource(source);
-        groupBuyActivityReq.setChannel(channel);
 
         // 2. 查询活动主体信息
         GroupBuyActivity groupBuyActivityRes = groupBuyActivityDao.queryValidGroupBuyActivity(groupBuyActivityReq);
@@ -76,9 +78,6 @@ public class ActivityRepository implements IActivityRepository {
         return GroupBuyActivityDiscountVO.builder()
                 .activityId(groupBuyActivityRes.getActivityId())
                 .activityName(groupBuyActivityRes.getActivityName())
-                .source(groupBuyActivityRes.getSource())
-                .channel(groupBuyActivityRes.getChannel())
-                .goodsId(groupBuyActivityRes.getGoodsId())
                 .groupBuyDiscount(groupBuyDiscount) // 注入折扣聚合信息
                 .groupType(groupBuyActivityRes.getGroupType())
                 .takeLimitCount(groupBuyActivityRes.getTakeLimitCount())
@@ -107,6 +106,24 @@ public class ActivityRepository implements IActivityRepository {
                 .goodsId(sku.getGoodsId())
                 .goodsName(sku.getGoodsName())
                 .originalPrice(sku.getOriginalPrice())
+                .build();
+    }
+
+    @Override
+    public SCSkuActivityVO querySCSkuActivityBySCGoodsId(String goodsId) {
+        // 1. 查询商品活动关联PO
+        SCSkuActivity scSkuActivity = skuActivityDao.querySCSkuActivityVOBySCGoodsId(goodsId);
+
+        if (null == scSkuActivity){
+            return null;
+        }
+
+        // 2. 转换为 业务VO
+        return SCSkuActivityVO.builder()
+                .goodsId(goodsId)
+                .activityId(scSkuActivity.getActivityId())
+                .source(scSkuActivity.getSource())
+                .channel(scSkuActivity.getChannel())
                 .build();
     }
 }
