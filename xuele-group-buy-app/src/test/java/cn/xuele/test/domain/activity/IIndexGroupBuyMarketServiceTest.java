@@ -10,6 +10,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import jakarta.annotation.Resource;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 营销活动领域服务测试
  *
@@ -27,7 +30,7 @@ public class IIndexGroupBuyMarketServiceTest {
     @Test
     public void test_indexMarketTrial() throws Exception {
         MarketProductEntity marketProductEntity = new MarketProductEntity();
-        marketProductEntity.setUserId("xiaofuge");
+        marketProductEntity.setUserId("xxx");
         marketProductEntity.setSource("s01");
         marketProductEntity.setChannel("c01");
         marketProductEntity.setGoodsId("9890001");
@@ -49,6 +52,7 @@ public class IIndexGroupBuyMarketServiceTest {
         TrialBalanceEntity trialBalanceEntity = indexGroupBuyMarketService.indexMarketTrial(marketProductEntity);
         log.info("请求参数:{}", JSON.toJSONString(marketProductEntity));
         log.info("返回结果:{}", JSON.toJSONString(trialBalanceEntity));
+
     }
 
 }

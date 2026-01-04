@@ -5,6 +5,8 @@ import cn.xuele.domain.tag.service.ITagService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RBitSet;
+import org.redisson.api.RedissonClient;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
@@ -29,6 +31,9 @@ public class ITagServiceTest {
     @Resource
     private ITagRepository tagRepository;
 
+    @Resource
+    private RedissonClient redissonClient;
+
     @Test
     public void test_tag_job() {
         tagService.execTagBatchJob("RQ_KJHKL98UU78H66554GFDV", "10001");
@@ -40,6 +45,12 @@ public class ITagServiceTest {
         // 是否存在
         log.info("xuele 存在，预期结果为 true，测试结果:{}", tagRepository.isUserInTag(tagId, "xuele"));
         log.info("xiaofuge 不存在，预期结果为 false，测试结果:{}", tagRepository.isUserInTag(tagId, "xiaofuge"));
-
     }
+
+    @Test
+    public void test_null_tag_bitmap() {
+        RBitSet bitSet = redissonClient.getBitSet("null");
+        log.info("测试结果:{}", bitSet.isExists());
+    }
+
 }

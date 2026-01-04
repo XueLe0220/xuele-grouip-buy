@@ -1,11 +1,14 @@
 package cn.xuele.domain.activity.model.valobj;
 
+import cn.xuele.types.common.Constants;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 /**
  * 拼团活动配置聚合值对象 (Activity + Discount)
@@ -51,6 +54,48 @@ public class GroupBuyActivityDiscountVO {
     private String tagId;
     /** 标签作用范围 */
     private String tagScope;
+
+    /**
+     * 可见性限制判断
+     * 逻辑：只要配置了 "1"，就返回 Refuse (False)，代表"有门禁，需要去查白名单"
+     * 否则返回 Allow (True)，代表"没门禁，直接进"
+     */
+    public boolean isVisible() {
+        // 1. 空配置，直接放行
+        if (StringUtils.isBlank(this.tagScope)) {
+            return TagScopeEnumVO.VISIBLE.getAllow();
+        }
+
+        String[] split = this.tagScope.split(Constants.SPLIT);
+
+        // 2. 校验第一位 (可见性标识)
+        if (split.length > 0 && Objects.equals(split[0], "1")) {
+            // 既然配置了限制，那就默认拒绝，等待后续去查 Redis BitMap
+            return TagScopeEnumVO.VISIBLE.getRefuse();
+        }
+
+        return TagScopeEnumVO.VISIBLE.getAllow();
+    }
+
+    /**
+     * 参与性限制判断
+     */
+    public boolean isEnable() {
+        // 1. 空配置，直接放行
+        if (StringUtils.isBlank(this.tagScope)) {
+            return TagScopeEnumVO.ENABLE.getAllow();
+        }
+
+        String[] split = this.tagScope.split(Constants.SPLIT);
+
+        // 2. 校验第二位 (参与性标识)
+        if (split.length > 1 && Objects.equals(split[1], "2")) {
+            // 既然配置了限制，那就默认拒绝，等待后续去查 Redis BitMap
+            return TagScopeEnumVO.ENABLE.getRefuse();
+        }
+
+        return TagScopeEnumVO.ENABLE.getAllow();
+    }
 
     /**
      * 强关联：折扣配置

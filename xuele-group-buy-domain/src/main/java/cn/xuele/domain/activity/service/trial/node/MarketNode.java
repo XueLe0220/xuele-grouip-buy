@@ -41,7 +41,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class MarketNode extends AbstractGroupBuyMarketSupport {
 
     private final ThreadPoolExecutor threadPoolExecutor;
-    private final EndNode endNode;
+    private final TagNode tagNode;
     private final ErrorNode errorNode;
     // Key: BeanName (例如 "ZJ", "MJ"), Value: Bean实例
     private final Map<String, IDiscountCalculateService> discountCalculateServiceMap;
@@ -124,6 +124,6 @@ public class MarketNode extends AbstractGroupBuyMarketSupport {
         if (null == dynamicContext.getGroupBuyActivityDiscountVO() || null == dynamicContext.getSkuVO() || null == dynamicContext.getDeductionPrice()) {
             return errorNode;
         }
-        return endNode;
+        return tagNode;
     }
 }

@@ -4,7 +4,7 @@ import cn.xuele.infrastructure.dao.po.SCSkuActivity;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
- * TODO: 类描述
+ * 渠道商品活动关联配置 DAO
  *
  * @author XueLe
  * @version 1.0.0
