@@ -5,6 +5,8 @@ import cn.xuele.domain.activity.model.entity.TrialBalanceEntity;
 import cn.xuele.domain.activity.service.trial.AbstractGroupBuyMarketSupport;
 import cn.xuele.domain.activity.service.trial.factory.DefaultActivityStrategyFactory;
 import cn.xuele.types.design.framework.tree.StrategyHandler;
+import cn.xuele.types.enums.ResponseCode;
+import cn.xuele.types.exception.AppException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,11 +34,21 @@ public class SwitchNode extends AbstractGroupBuyMarketSupport {
 
     @Override
     public TrialBalanceEntity doApply(MarketProductEntity requestParameter, DefaultActivityStrategyFactory.DynamicContext dynamicContext) throws Exception {
-        // 1. TODO: 检查服务降级开关 (SwitchConfig)
-        // if (downgradeSwitch.isOn()) { return defaultResult; }
 
-        // 2. TODO: 人群切量逻辑
-        // if (userId.hashCode() % 100 < 50) { ... }
+        // 根据用户 id 进行切量
+        String userId = requestParameter.getUserId();
+
+        // 1. 检查服务降级开关 (SwitchConfig)
+        if (repository.downgradeSwitch()) {
+            log.info("拼团活动降级拦截 {}", userId);
+            throw new AppException(ResponseCode.E0003.getCode(), ResponseCode.E0003.getInfo());
+        }
+
+        // 2. 人群切量逻辑
+        if (!repository.cutRange(userId)) {
+            log.info("拼团活动切量拦截 {}", userId);
+            throw new AppException(ResponseCode.E0004.getCode(), ResponseCode.E0004.getInfo());
+        }
 
         // 目前阶段：直接放行，流转到 MarketNode 进行业务处理
         return router(requestParameter, dynamicContext);

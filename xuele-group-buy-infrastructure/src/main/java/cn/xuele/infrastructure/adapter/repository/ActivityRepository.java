@@ -14,6 +14,7 @@ import cn.xuele.infrastructure.dao.po.GroupBuyActivity;
 import cn.xuele.infrastructure.dao.po.GroupBuyDiscount;
 import cn.xuele.infrastructure.dao.po.SCSkuActivity;
 import cn.xuele.infrastructure.dao.po.Sku;
+import cn.xuele.infrastructure.dcc.DCCService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -39,6 +40,7 @@ public class ActivityRepository implements IActivityRepository {
     private final IGroupBuyDiscountDao groupBuyDiscountDao;
     private final ISkuDao skuDao;
     private final ISCSkuActivityDao skuActivityDao;
+    private final DCCService dccService;
 
     @Override
     public GroupBuyActivityDiscountVO queryGroupBuyActivityDiscountVO(Long activityId) {
@@ -125,5 +127,15 @@ public class ActivityRepository implements IActivityRepository {
                 .source(scSkuActivity.getSource())
                 .channel(scSkuActivity.getChannel())
                 .build();
+    }
+
+    @Override
+    public boolean downgradeSwitch() {
+        return dccService.isDowngradeSwitch();
+    }
+
+    @Override
+    public boolean cutRange(String userId) {
+        return dccService.isCutRange(userId);
     }
 }

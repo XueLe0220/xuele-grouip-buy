@@ -30,4 +30,8 @@ public interface IActivityRepository {
      * 根据商品ID查询商品与活动的关联信息
      */
     SCSkuActivityVO querySCSkuActivityBySCGoodsId(String goodsId);
+
+    boolean downgradeSwitch();
+
+    boolean cutRange(String userId);
 }
