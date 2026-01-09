@@ -39,7 +39,7 @@ public class ActivityRepository implements IActivityRepository {
     private final IGroupBuyActivityDao groupBuyActivityDao;
     private final IGroupBuyDiscountDao groupBuyDiscountDao;
     private final ISkuDao skuDao;
-    private final ISCSkuActivityDao skuActivityDao;
+    private final ISCSkuActivityDao scSkuActivityDao;
     private final DCCService dccService;
 
     @Override
@@ -57,7 +57,8 @@ public class ActivityRepository implements IActivityRepository {
 
         // 3. 获取折扣ID并查询关联的折扣配置
         String discountId = groupBuyActivityRes.getDiscountId();
-        GroupBuyDiscount groupBuyDiscountRes = groupBuyDiscountDao.queryGroupBuyActivityDiscountByDiscountId(discountId);
+        GroupBuyDiscount groupBuyDiscountRes =
+                groupBuyDiscountDao.queryGroupBuyActivityDiscountByDiscountId(discountId);
 
         // [关键防御]：虽然理论上活动必须有关联折扣，但为了健壮性，若折扣不存在也需处理
         if (null == groupBuyDiscountRes) {
@@ -112,11 +113,17 @@ public class ActivityRepository implements IActivityRepository {
     }
 
     @Override
-    public SCSkuActivityVO querySCSkuActivityBySCGoodsId(String goodsId) {
+    public SCSkuActivityVO querySCSkuActivityBySCGoodsId(String goodsId, String source, String channel) {
         // 1. 查询商品活动关联PO
-        SCSkuActivity scSkuActivity = skuActivityDao.querySCSkuActivityVOBySCGoodsId(goodsId);
+        SCSkuActivity scSkuActivityRes = SCSkuActivity.builder()
+                .goodsId(goodsId)
+                .source(source)
+                .channel(channel)
+                .build();
 
-        if (null == scSkuActivity){
+        SCSkuActivity scSkuActivity = scSkuActivityDao.querySCSkuActivityVO(scSkuActivityRes);
+
+        if (null == scSkuActivity) {
             return null;
         }
 

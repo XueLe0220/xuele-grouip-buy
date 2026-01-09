@@ -53,6 +53,8 @@ public class MarketNode extends AbstractGroupBuyMarketSupport {
         QueryGroupBuyActivityDiscountVOThreadTask queryGroupBuyActivityDiscountVOThreadTask =
                 new QueryGroupBuyActivityDiscountVOThreadTask(
                         requestParameter.getGoodsId(),
+                        requestParameter.getSource(),
+                        requestParameter.getChannel(),
                         repository
                 );
 

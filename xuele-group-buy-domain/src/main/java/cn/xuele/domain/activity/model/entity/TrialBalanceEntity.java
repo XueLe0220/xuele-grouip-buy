@@ -1,5 +1,6 @@
 package cn.xuele.domain.activity.model.entity;
 
+import cn.xuele.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -74,4 +75,7 @@ public class TrialBalanceEntity {
      * 此字段为 false，前端按钮应置灰（Disable）并提示原因。
      */
     private Boolean isEnable;
+
+    /** 活动配置信息 */
+    private GroupBuyActivityDiscountVO groupBuyActivityDiscountVO;
 }

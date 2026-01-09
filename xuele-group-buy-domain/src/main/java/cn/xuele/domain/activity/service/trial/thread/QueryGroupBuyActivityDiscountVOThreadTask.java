@@ -22,10 +22,18 @@ import java.util.concurrent.Callable;
 @RequiredArgsConstructor
 public class QueryGroupBuyActivityDiscountVOThreadTask implements Callable<GroupBuyActivityDiscountVO> {
 
-    /** 查询参数：商品Id */
+    /**
+     * 查询参数：商品Id
+     */
     private final String goodsId;
 
-    /** 仓储接口  */
+    private final String source;
+
+    private final String channel;
+
+    /**
+     * 仓储接口
+     */
     private final IActivityRepository repository;
 
     /**
@@ -36,7 +44,7 @@ public class QueryGroupBuyActivityDiscountVOThreadTask implements Callable<Group
      */
     @Override
     public GroupBuyActivityDiscountVO call() throws Exception {
-        SCSkuActivityVO scSkuActivityVO = repository.querySCSkuActivityBySCGoodsId(goodsId);
+        SCSkuActivityVO scSkuActivityVO = repository.querySCSkuActivityBySCGoodsId(goodsId, source, channel);
         if (null == scSkuActivityVO) {
             return null;
         }

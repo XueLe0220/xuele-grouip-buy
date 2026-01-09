@@ -29,7 +29,7 @@ public interface IActivityRepository {
     /**
      * 根据商品ID查询商品与活动的关联信息
      */
-    SCSkuActivityVO querySCSkuActivityBySCGoodsId(String goodsId);
+    SCSkuActivityVO querySCSkuActivityBySCGoodsId(String goodsId, String source, String channel);
 
     boolean downgradeSwitch();
 

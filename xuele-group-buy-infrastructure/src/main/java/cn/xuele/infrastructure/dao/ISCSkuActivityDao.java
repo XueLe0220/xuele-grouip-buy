@@ -16,5 +16,5 @@ public interface ISCSkuActivityDao {
     /**
      * 根据 商品ID 查询关联的 活动ID
      */
-    SCSkuActivity querySCSkuActivityVOBySCGoodsId(String goodsId);
+    SCSkuActivity querySCSkuActivityVO(SCSkuActivity scSkuActivityRes);
 }

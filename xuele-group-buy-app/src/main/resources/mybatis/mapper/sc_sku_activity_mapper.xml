@@ -12,11 +12,11 @@
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
-    <select id="querySCSkuActivityVOBySCGoodsId" resultMap="dataMap"
-            parameterType="java.lang.String">
+    <select id="querySCSkuActivityVO" resultMap="dataMap"
+            parameterType="cn.xuele.infrastructure.dao.po.SCSkuActivity">
         select goods_id, activity_id, source, channel
         from sc_sku_activity
-        where goods_id = #{goodsId}
+        where goods_id = #{goodsId} and source = #{source} and channel = #{channel}
     </select>
 
 </mapper>
