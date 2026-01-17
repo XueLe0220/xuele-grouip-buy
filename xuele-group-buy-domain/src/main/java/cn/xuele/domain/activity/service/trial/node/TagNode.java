@@ -34,10 +34,6 @@ public class TagNode extends AbstractGroupBuyMarketSupport {
      */
     private final EndNode endNode;
 
-    /**
-     * 仓储接口：提供底层 Redis BitMap 查询能力
-     */
-    private final ITagRepository repository;
 
     /**
      * 执行节点逻辑

@@ -15,8 +15,11 @@ import cn.xuele.infrastructure.dao.po.GroupBuyDiscount;
 import cn.xuele.infrastructure.dao.po.SCSkuActivity;
 import cn.xuele.infrastructure.dao.po.Sku;
 import cn.xuele.infrastructure.dcc.DCCService;
+import cn.xuele.types.common.RedisBitMapUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBitSet;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -41,6 +44,8 @@ public class ActivityRepository implements IActivityRepository {
     private final ISkuDao skuDao;
     private final ISCSkuActivityDao scSkuActivityDao;
     private final DCCService dccService;
+    private final RedissonClient redissonClient;
+
 
     @Override
     public GroupBuyActivityDiscountVO queryGroupBuyActivityDiscountVO(Long activityId) {
@@ -145,4 +150,12 @@ public class ActivityRepository implements IActivityRepository {
     public boolean cutRange(String userId) {
         return dccService.isCutRange(userId);
     }
+
+    @Override
+    public boolean isUserInTag(String tagId, String userId) {
+        RBitSet bitSet = redissonClient.getBitSet(RedisBitMapUtils.getTagBitMapKey(tagId));
+        return bitSet.get(RedisBitMapUtils.getIndexFromUserId(userId));
+    }
+
+
 }

@@ -34,4 +34,6 @@ public interface IActivityRepository {
     boolean downgradeSwitch();
 
     boolean cutRange(String userId);
+
+    boolean isUserInTag(String tagId, String userId);
 }

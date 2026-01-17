@@ -28,11 +28,4 @@ public interface ITagRepository {
      */
     void addCrowdTagsUsers(String tagId, List<String> userIdList);
 
-    /**
-     * [新增] 判断用户是否命中该人群标签 (走 Redis Bitmap)
-     * * @param tagId 人群ID
-     * @param userId 用户ID
-     * @return true-命中
-     */
-    boolean isUserInTag(String tagId, String userId);
 }

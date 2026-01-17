@@ -1,5 +1,6 @@
 package cn.xuele.domain.activity.service.discount;
 
+import cn.xuele.domain.activity.adapter.repository.IActivityRepository;
 import cn.xuele.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import cn.xuele.domain.activity.model.valobj.DiscountTypeEnum;
 
@@ -17,13 +18,15 @@ import java.math.BigDecimal;
  * @version 1.0.0
  * @since 2025/12/25 15:55
  */
-    public abstract class AbstractDiscountCalculateService implements IDiscountCalculateService {
+public abstract class AbstractDiscountCalculateService implements IDiscountCalculateService {
 
+    protected IActivityRepository repository;
     /**
      * 模板方法：定义计算骨架
      */
     @Override
-    public BigDecimal calculate(String userId, BigDecimal originalPrice, GroupBuyActivityDiscountVO.GroupBuyDiscount groupBuyDiscount) {
+    public BigDecimal calculate(String userId, BigDecimal originalPrice,
+                                GroupBuyActivityDiscountVO.GroupBuyDiscount groupBuyDiscount) {
 
         // 1. 获取优惠类型
         DiscountTypeEnum discountType = groupBuyDiscount.getDiscountType();
@@ -46,18 +49,17 @@ import java.math.BigDecimal;
     /**
      * 抽象方法：具体的优惠算法
      */
-    protected abstract BigDecimal doCalculate(BigDecimal originalPrice, GroupBuyActivityDiscountVO.GroupBuyDiscount groupBuyDiscount);
+    protected abstract BigDecimal doCalculate(BigDecimal originalPrice,
+                                              GroupBuyActivityDiscountVO.GroupBuyDiscount groupBuyDiscount);
 
     /**
      * 人群标签校验
      * * @param userId 用户ID
-     * @param tagId  人群标签ID (例如：ABCD_001 代表"高净值用户")
+     *
+     * @param tagId 人群标签ID (例如：ABCD_001 代表"高净值用户")
      * @return boolean true-在人群内(或无限制) / false-不在人群内
      */
     private boolean filterTagId(String userId, String tagId) {
-        // TODO: 2025/12/25 对接 DMP (数据管理平台) 或 用户画像中心
-        // 目前阶段为了方便测试核心计算逻辑，默认全部放行 (Return True)
-        // 如果这里返回 false，会导致所有 TAG 类型测试用例直接返回原价，无法测试计算逻辑
         return true;
     }
 }

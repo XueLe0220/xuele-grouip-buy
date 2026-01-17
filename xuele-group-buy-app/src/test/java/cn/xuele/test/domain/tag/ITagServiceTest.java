@@ -1,5 +1,6 @@
 package cn.xuele.test.domain.tag;
 
+import cn.xuele.domain.activity.adapter.repository.IActivityRepository;
 import cn.xuele.domain.tag.adapter.repository.ITagRepository;
 import cn.xuele.domain.tag.service.ITagService;
 import jakarta.annotation.Resource;
@@ -29,7 +30,7 @@ public class ITagServiceTest {
     private ITagService tagService;
 
     @Resource
-    private ITagRepository tagRepository;
+    private IActivityRepository repository;
 
     @Resource
     private RedissonClient redissonClient;
@@ -43,8 +44,8 @@ public class ITagServiceTest {
     public void test_tag_bitmap() {
         String tagId = "RQ_KJHKL98UU78H66554GFDV";
         // 是否存在
-        log.info("xuele 存在，预期结果为 true，测试结果:{}", tagRepository.isUserInTag(tagId, "xuele"));
-        log.info("xiaofuge 不存在，预期结果为 false，测试结果:{}", tagRepository.isUserInTag(tagId, "xiaofuge"));
+        log.info("xuele 存在，预期结果为 true，测试结果:{}", repository.isUserInTag(tagId, "xuele"));
+        log.info("xiaofuge 不存在，预期结果为 false，测试结果:{}", repository.isUserInTag(tagId, "xiaofuge"));
     }
 
     @Test

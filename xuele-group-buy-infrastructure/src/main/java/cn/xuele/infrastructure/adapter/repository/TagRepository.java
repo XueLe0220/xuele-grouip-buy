@@ -8,6 +8,7 @@ import cn.xuele.infrastructure.dao.ICrowdTagsJobDao;
 import cn.xuele.infrastructure.dao.po.CrowdTags;
 import cn.xuele.infrastructure.dao.po.CrowdTagsDetail;
 import cn.xuele.infrastructure.dao.po.CrowdTagsJob;
+import cn.xuele.types.common.RedisBitMapUtils;
 import com.google.common.hash.Hashing;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -102,43 +103,11 @@ public class TagRepository implements ITagRepository {
             String cacheKey = BITMAP_KEY_PREFIX + tagId;
             RBitSet bitSet = redissonClient.getBitSet(cacheKey);
             for (String userId : userIdList) {
-                bitSet.set(getIndexFromUserId(userId), true);
+                bitSet.set(RedisBitMapUtils.getIndexFromUserId(userId), true);
             }
         } catch (DuplicateKeyException ignore) {
             // 暂时忽略唯一索引冲突
         }
 
     }
-
-    @Override
-    public boolean isUserInTag(String tagId, String userId) {
-        try {
-            String cacheKey = BITMAP_KEY_PREFIX + tagId;
-            RBitSet bitSet = redissonClient.getBitSet(cacheKey);
-
-            // 如果 Key 不存在（比如过期了），get 会返回 false，逻辑是安全的
-            return bitSet.get(getIndexFromUserId(userId));
-        } catch (Exception e) {
-            log.error("【TagRepository】Redis Bitmap 查询失败，降级返回 false", e);
-            return false;
-        }
-    }
-
-    /**
-     * [核心算法] 将 String 类型的 userId 映射为 Bitmap 的 offset
-     * * @param userId 用户ID字符串
-     *
-     * @return 映射后的正整数索引
-     */
-    private long getIndexFromUserId(String userId) {
-        int hash32 = Hashing.murmur3_32_fixed()
-                .hashString(userId, StandardCharsets.UTF_8)
-                .asInt();
-
-        // 强制转化为正整数并返回
-        int index = hash32 & 0x7FFFFFFF;
-
-        return index % 100000000;
-    }
-
 }
