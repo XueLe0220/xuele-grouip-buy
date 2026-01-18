@@ -5,8 +5,12 @@ import cn.xuele.domain.trade.model.aggregate.GroupBuyOrderAggregate;
 import cn.xuele.domain.trade.model.entity.MarketPayOrderEntity;
 import cn.xuele.domain.trade.model.entity.PayActivityEntity;
 import cn.xuele.domain.trade.model.entity.PayDiscountEntity;
+import cn.xuele.domain.trade.model.entity.TradeRuleCommandEntity;
+import cn.xuele.domain.trade.model.entity.TradeRuleFilterBackEntity;
 import cn.xuele.domain.trade.model.entity.UserEntity;
 import cn.xuele.domain.trade.model.valobj.GroupBuyProgressVO;
+import cn.xuele.domain.trade.service.fatcory.TradeRuleFilterFactory;
+import cn.xuele.types.design.framework.link.chain.BusinessLinkedList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +34,9 @@ public class TradeOrderService implements ITradeOrderService {
     // 注入仓储接口（依赖倒置：只依赖接口，不依赖 Infra 层的具体实现）
     private final ITradeRepository tradeRepository;
 
+    private final BusinessLinkedList<TradeRuleCommandEntity, TradeRuleFilterFactory.DynamicContext,
+            TradeRuleFilterBackEntity> tradeRuleFilter;
+
     @Override
     public MarketPayOrderEntity queryNoPayMarketPayOrderByOutTradeNo(String userId, String outTradeNo) {
         log.info("拼团锁单-查询未支付订单 userId:{} outTradeNo:{}", userId, outTradeNo);
@@ -43,9 +50,19 @@ public class TradeOrderService implements ITradeOrderService {
     }
 
     @Override
-    public MarketPayOrderEntity lockMarketPayOrder(UserEntity userEntity, PayActivityEntity payActivityEntity, PayDiscountEntity payDiscountEntity) {
+    public MarketPayOrderEntity lockMarketPayOrder(UserEntity userEntity, PayActivityEntity payActivityEntity,
+                                                   PayDiscountEntity payDiscountEntity) throws Exception {
         log.info("拼团锁单-开始锁定 user:{} activity:{} discount:{}",
                 userEntity.getUserId(), payActivityEntity.getActivityId(), payDiscountEntity.getDeductionPrice());
+
+        // 交易规则过滤
+        TradeRuleFilterBackEntity tradeRuleFilterBackEntity = tradeRuleFilter.apply(TradeRuleCommandEntity.builder()
+                .activityId(payActivityEntity.getActivityId())
+                .userId(userEntity.getUserId())
+                .build(),
+                new TradeRuleFilterFactory.DynamicContext());
+
+        Integer userTakeOrderCount = tradeRuleFilterBackEntity.getUserTakeOrderCount();
 
         // 1. 组装聚合根 (Aggregate)
         // 这是 DDD 的核心步骤：将分散的实体打包成一个具有完整业务语义的聚合对象。
@@ -53,6 +70,7 @@ public class TradeOrderService implements ITradeOrderService {
                 .userEntity(userEntity)
                 .payActivityEntity(payActivityEntity)
                 .payDiscountEntity(payDiscountEntity)
+                .userTakeOrderCount(userTakeOrderCount)
                 .build();
 
         // 2. 调用仓储层进行事务处理

@@ -55,5 +55,5 @@ public interface ITradeOrderService {
      * @param payDiscountEntity 支付优惠实体（包含折扣信息，计算最终价格）
      * @return MarketPayOrderEntity 锁单成功后生成的订单实体
      */
-    MarketPayOrderEntity lockMarketPayOrder(UserEntity userEntity, PayActivityEntity payActivityEntity, PayDiscountEntity payDiscountEntity);
+    MarketPayOrderEntity lockMarketPayOrder(UserEntity userEntity, PayActivityEntity payActivityEntity, PayDiscountEntity payDiscountEntity) throws Exception;
 }

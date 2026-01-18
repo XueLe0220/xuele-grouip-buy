@@ -20,7 +20,7 @@ public interface ILogicHandler<T, D, R> {
      *
      * @return 下一个处理器节点的返回结果，默认 null
      */
-    default R next(){
+    default R next(T requestParameter, D DynamicContext){
         return null;
     }
 

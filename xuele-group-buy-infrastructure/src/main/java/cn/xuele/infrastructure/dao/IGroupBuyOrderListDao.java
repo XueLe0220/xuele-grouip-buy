@@ -45,4 +45,6 @@ public interface IGroupBuyOrderListDao {
      * @param groupBuyOrderListReq 待插入的订单详情 PO 对象
      */
     void insert(GroupBuyOrderList groupBuyOrderListReq);
+
+    Integer queryOrderCountByActivityId(GroupBuyOrderList groupBuyOrderListReq);
 }

@@ -1,6 +1,7 @@
 package cn.xuele.domain.trade.adapter.repository;
 
 import cn.xuele.domain.trade.model.aggregate.GroupBuyOrderAggregate;
+import cn.xuele.domain.trade.model.entity.GroupBuyActivityEntity;
 import cn.xuele.domain.trade.model.entity.MarketPayOrderEntity;
 import cn.xuele.domain.trade.model.valobj.GroupBuyProgressVO;
 
@@ -56,4 +57,8 @@ public interface ITradeRepository {
      * @return 锁单成功后生成的订单实体 (包含生成的 orderId)
      */
     MarketPayOrderEntity lockMarketPayOrder(GroupBuyOrderAggregate groupBuyOrderAggregate);
+
+    GroupBuyActivityEntity queryGroupBuyActivityByActivityId(Long activityId);
+
+    Integer queryOrderCountByActivityIdAndUserId(Long activityId, String userId);
 }

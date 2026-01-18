@@ -9,12 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 拼团订单聚合根 (Aggregate Root)
- * <p>
- * 领域定义：
- * 它是整个拼团交易上下文的“总指挥”和“数据容器”。
- * 它将分散的“人(User)”、“事(Activity)”、“钱(Discount)”聚合在一起，
- * 形成一个完整的、有一致性保证的业务对象。
+ * 拼团订单聚合根 (Aggregate Root)。
  * <p>
  * 核心作用：
  * 1. 保证数据一致性：锁单操作必须同时具备这三要素，缺一不可。
@@ -30,24 +25,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class GroupBuyOrderAggregate {
 
-    /**
-     * 用户实体
-     * 代表“谁”在发起这个聚合操作。
-     */
+    /** 用户实体 */
     private UserEntity userEntity;
 
-    /**
-     * 支付活动实体
-     * 代表“在什么规则下”进行的交易。
-     * (包含 teamId, activityId 等上下文)
-     */
+    /** 支付活动实体 */
     private PayActivityEntity payActivityEntity;
 
-    /**
-     * 支付优惠实体
-     * 代表“具体的交易金额和商品”。
-     * (包含 outTradeNo, price 等)
-     */
+    /** 支付优惠实体 */
     private PayDiscountEntity payDiscountEntity;
+
+    /** 已参与拼团量 */
+    private Integer userTakeOrderCount;
 
 }

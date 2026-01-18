@@ -2,16 +2,21 @@ package cn.xuele.infrastructure.adapter.repository;
 
 import cn.xuele.domain.trade.adapter.repository.ITradeRepository;
 import cn.xuele.domain.trade.model.aggregate.GroupBuyOrderAggregate;
+import cn.xuele.domain.trade.model.entity.GroupBuyActivityEntity;
 import cn.xuele.domain.trade.model.entity.MarketPayOrderEntity;
 import cn.xuele.domain.trade.model.entity.PayActivityEntity;
 import cn.xuele.domain.trade.model.entity.PayDiscountEntity;
 import cn.xuele.domain.trade.model.entity.UserEntity;
 import cn.xuele.domain.trade.model.valobj.GroupBuyProgressVO;
 import cn.xuele.domain.trade.model.valobj.TradeOrderStatusEnumVO;
+import cn.xuele.infrastructure.dao.IGroupBuyActivityDao;
 import cn.xuele.infrastructure.dao.IGroupBuyOrderDao;
 import cn.xuele.infrastructure.dao.IGroupBuyOrderListDao;
 import cn.xuele.infrastructure.dao.po.GroupBuyOrder;
 import cn.xuele.infrastructure.dao.po.GroupBuyOrderList;
+import cn.xuele.infrastructure.dao.po.GroupBuyActivity;
+import cn.xuele.types.common.Constants;
+import cn.xuele.types.enums.ActivityStatusEnumVO;
 import cn.xuele.types.enums.ResponseCode;
 import cn.xuele.types.exception.AppException;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +46,7 @@ import java.math.BigDecimal;
 @Slf4j
 public class TradeRepository implements ITradeRepository {
 
+    private final IGroupBuyActivityDao groupBuyActivityDao;
     private final IGroupBuyOrderDao groupBuyOrderDao;
     private final IGroupBuyOrderListDao groupBuyOrderListDao;
 
@@ -95,6 +101,7 @@ public class TradeRepository implements ITradeRepository {
         PayActivityEntity payActivityEntity = groupBuyOrderAggregate.getPayActivityEntity();
         UserEntity userEntity = groupBuyOrderAggregate.getUserEntity();
         PayDiscountEntity payDiscountEntity = groupBuyOrderAggregate.getPayDiscountEntity();
+        Integer userTakeOrderCount = groupBuyOrderAggregate.getUserTakeOrderCount();
 
         // 2. 决策：是“开新团”还是“加入旧团”？
         String teamId = payActivityEntity.getTeamId();
@@ -116,7 +123,7 @@ public class TradeRepository implements ITradeRepository {
                     .channel(payDiscountEntity.getChannel())
                     .originalPrice(payDiscountEntity.getOriginalPrice())
                     .deductionPrice(payDiscountEntity.getDeductionPrice())
-                    .payPrice(payPrice) // CR修复：使用计算后的实付金额
+                    .payPrice(payPrice)
                     .targetCount(payActivityEntity.getTargetCount())
                     .completeCount(0) // 新团完成数为0
                     .lockCount(1)     // 锁单数为1 (自己)
@@ -138,7 +145,7 @@ public class TradeRepository implements ITradeRepository {
         }
 
         // 3. 构建用户订单明细 (落库契约)
-    String orderId = RandomStringUtils.randomNumeric(12);
+        String orderId = RandomStringUtils.randomNumeric(12);
 
         GroupBuyOrderList groupBuyOrderListReq = GroupBuyOrderList.builder()
                 .userId(userEntity.getUserId())
@@ -152,8 +159,8 @@ public class TradeRepository implements ITradeRepository {
                 .channel(payDiscountEntity.getChannel())
                 .originalPrice(payDiscountEntity.getOriginalPrice())
                 .deductionPrice(payDiscountEntity.getDeductionPrice())
-                // 状态：初始创建(0)
                 .status(TradeOrderStatusEnumVO.CREATE.getCode())
+                .bizId(payActivityEntity.getActivityId() + Constants.UNDERLINE + userEntity.getUserId() + Constants.UNDERLINE + (userTakeOrderCount + 1))
                 .outTradeNo(payDiscountEntity.getOutTradeNo())
                 .build();
 
@@ -172,5 +179,32 @@ public class TradeRepository implements ITradeRepository {
                 .deductionPrice(payDiscountEntity.getDeductionPrice())
                 .tradeOrderStatusEnumVO(TradeOrderStatusEnumVO.CREATE)
                 .build();
+    }
+
+    @Override
+    public GroupBuyActivityEntity queryGroupBuyActivityByActivityId(Long activityId) {
+        GroupBuyActivity groupBuyActivity = groupBuyActivityDao.queryGroupBuyActivityByActivityId(activityId);
+        return GroupBuyActivityEntity.builder()
+                .activityId(groupBuyActivity.getActivityId())
+                .activityName(groupBuyActivity.getActivityName())
+                .discountId(groupBuyActivity.getDiscountId())
+                .groupType(groupBuyActivity.getGroupType())
+                .takeLimitCount(groupBuyActivity.getTakeLimitCount())
+                .target(groupBuyActivity.getTarget())
+                .validTime(groupBuyActivity.getValidTime())
+                .status(ActivityStatusEnumVO.valueOf(groupBuyActivity.getStatus()))
+                .startTime(groupBuyActivity.getStartTime())
+                .endTime(groupBuyActivity.getEndTime())
+                .tagId(groupBuyActivity.getTagId())
+                .tagScope(groupBuyActivity.getTagScope())
+                .build();
+    }
+
+    @Override
+    public Integer queryOrderCountByActivityIdAndUserId(Long activityId, String userId) {
+        GroupBuyOrderList groupBuyOrderListReq = new GroupBuyOrderList();
+        groupBuyOrderListReq.setActivityId(activityId);
+        groupBuyOrderListReq.setUserId(userId);
+        return groupBuyOrderListDao.queryOrderCountByActivityId(groupBuyOrderListReq);
     }
 }

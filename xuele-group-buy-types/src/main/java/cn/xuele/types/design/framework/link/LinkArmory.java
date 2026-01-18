@@ -2,6 +2,7 @@ package cn.xuele.types.design.framework.link;
 
 import cn.xuele.types.design.framework.link.chain.BusinessLinkedList;
 import cn.xuele.types.design.framework.link.handler.ILogicHandler;
+import lombok.Getter;
 
 /**
  * 链路装配器 (Link Armory)
@@ -23,6 +24,7 @@ public class LinkArmory<T, D, R> {
     /**
      * 组装完成的业务逻辑链路
      */
+    @Getter
     private final BusinessLinkedList<T, D, R> logicLink;
 
     /**
@@ -37,19 +39,10 @@ public class LinkArmory<T, D, R> {
         logicLink = new BusinessLinkedList<>(linkName);
 
         // 防御性编程：防止传入 null 导致空指针
-        if (logicHandlers != null && logicHandlers.length > 0) {
+        if (logicHandlers != null) {
             for (ILogicHandler<T, D, R> logicHandler : logicHandlers) {
                 logicLink.add(logicHandler);
             }
         }
-    }
-
-    /**
-     * 获取装配好的业务链路
-     *
-     * @return 完整的责任链对象
-     */
-    public BusinessLinkedList<T, D, R> getLogicLink() {
-        return logicLink;
     }
 }

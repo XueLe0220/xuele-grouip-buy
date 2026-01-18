@@ -4,6 +4,7 @@ import cn.xuele.domain.activity.adapter.repository.IActivityRepository;
 import cn.xuele.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import cn.xuele.domain.activity.model.valobj.SCSkuActivityVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.Callable;
 
@@ -20,6 +21,7 @@ import java.util.concurrent.Callable;
  * @since 2025/12/24 23:14
  */
 @RequiredArgsConstructor
+@Slf4j
 public class QueryGroupBuyActivityDiscountVOThreadTask implements Callable<GroupBuyActivityDiscountVO> {
 
     /**
@@ -46,6 +48,7 @@ public class QueryGroupBuyActivityDiscountVOThreadTask implements Callable<Group
     public GroupBuyActivityDiscountVO call() throws Exception {
         SCSkuActivityVO scSkuActivityVO = repository.querySCSkuActivityBySCGoodsId(goodsId, source, channel);
         if (null == scSkuActivityVO) {
+            log.error("该商品无关联活动");
             return null;
         }
         return repository.queryGroupBuyActivityDiscountVO(scSkuActivityVO.getActivityId());

@@ -51,6 +51,7 @@ public class ActivityRepository implements IActivityRepository {
     public GroupBuyActivityDiscountVO queryGroupBuyActivityDiscountVO(Long activityId) {
         // 1. 构建查询参数对象
         GroupBuyActivity groupBuyActivityReq = new GroupBuyActivity();
+        groupBuyActivityReq.setActivityId(activityId);
 
         // 2. 查询活动主体信息
         GroupBuyActivity groupBuyActivityRes = groupBuyActivityDao.queryValidGroupBuyActivity(groupBuyActivityReq);
