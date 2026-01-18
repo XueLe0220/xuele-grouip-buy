@@ -6,7 +6,8 @@ import cn.xuele.domain.trade.service.fatcory.TradeRuleFilterFactory;
 import cn.xuele.types.design.framework.link.handler.ILogicHandler;
 
 /**
- * TODO: 类描述
+ * 交易规则过滤链 - 终止节点
+ * 该节点位于链路末端，负责汇总上下文信息并构建最终返回对象
  *
  * @author XueLe
  * @version 1.0.0
@@ -14,10 +15,13 @@ import cn.xuele.types.design.framework.link.handler.ILogicHandler;
  */
 public class TradeRuleEndFilter implements ILogicHandler<TradeRuleCommandEntity,
         TradeRuleFilterFactory.DynamicContext, TradeRuleFilterBackEntity> {
+
     @Override
     public TradeRuleFilterBackEntity apply(TradeRuleCommandEntity requestParameter, TradeRuleFilterFactory.DynamicContext dynamicContext) throws Exception {
+        // 规则链执行完毕，将上下文中计算/获取的结果（如：用户参与次数）封装到返回实体中
         return TradeRuleFilterBackEntity.builder()
                 .userTakeOrderCount(dynamicContext.getUserTakeCount())
                 .build();
     }
+
 }
