@@ -1,7 +1,9 @@
 package cn.xuele.domain.trade.adapter.repository;
 
-import cn.xuele.domain.trade.model.aggregate.GroupBuyOrderAggregate;
+import cn.xuele.domain.trade.model.aggregate.GroupBuyLockOrderAggregate;
+import cn.xuele.domain.trade.model.aggregate.GroupBuyTeamSettlementAggregate;
 import cn.xuele.domain.trade.model.entity.GroupBuyActivityEntity;
+import cn.xuele.domain.trade.model.entity.GroupBuyTeamEntity;
 import cn.xuele.domain.trade.model.entity.MarketPayOrderEntity;
 import cn.xuele.domain.trade.model.valobj.GroupBuyProgressVO;
 
@@ -56,9 +58,15 @@ public interface ITradeRepository {
      * @param groupBuyOrderAggregate 拼团订单聚合根
      * @return 锁单成功后生成的订单实体 (包含生成的 orderId)
      */
-    MarketPayOrderEntity lockMarketPayOrder(GroupBuyOrderAggregate groupBuyOrderAggregate);
+    MarketPayOrderEntity lockMarketPayOrder(GroupBuyLockOrderAggregate groupBuyOrderAggregate);
 
     GroupBuyActivityEntity queryGroupBuyActivityByActivityId(Long activityId);
 
     Integer queryOrderCountByActivityIdAndUserId(Long activityId, String userId);
+
+    void settlement(GroupBuyTeamSettlementAggregate groupBuyTeamSettlementAggregate);
+
+    boolean isSCBlackIntercept(String source, String channel);
+
+    GroupBuyTeamEntity queryGroupBuyTeamByTeamId(String teamId);
 }

@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class GroupBuyOrderAggregate {
+public class GroupBuyLockOrderAggregate {
 
     /** 用户实体 */
     private UserEntity userEntity;

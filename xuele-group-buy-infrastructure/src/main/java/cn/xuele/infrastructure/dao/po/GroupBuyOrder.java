@@ -27,60 +27,34 @@ public class GroupBuyOrder {
 
     /** 自增ID */
     private Long id;
-
-    /**
-     * 拼单组队ID (核心)
-     * 所有参与该团的用户都关联此ID，锁单时的并发竞争资源点。
-     */
+    /** 拼单组队ID */
     private String teamId;
-
     /** 活动ID */
     private Long activityId;
-
-    /** 渠道 (如: s01) */
+    /** 渠道 */
     private String source;
-
-    /** 来源 (如: c01) */
+    /** 来源 */
     private String channel;
-
     /** 原始价格 */
     private BigDecimal originalPrice;
-
     /** 折扣金额 */
     private BigDecimal deductionPrice;
-
     /** 支付价格 */
     private BigDecimal payPrice;
-
-    /**
-     * 目标数量
-     * 例如：3人成团，此值为3。
-     */
+    /** 目标数量 */
     private Integer targetCount;
-
-    /**
-     * 完成数量
-     * 只有用户【支付成功】后，此值才会增加。
-     */
+    /** 完成数量 */
     private Integer completeCount;
-
-    /**
-     * 锁单数量
-     * 业务含义：已下单但【未支付】的占位人数。
-     */
+    /** 锁单数量 */
     private Integer lockCount;
-
-    /**
-     * 状态
-     * 0-拼单中 (允许继续锁单)
-     * 1-完成 (满员且支付成功)
-     * 2-失败 (超时未满员)
-     */
+    /** 状态（0-拼单中、1-完成、2-失败） */
     private Integer status;
-
+    /** 拼团开始时间 - 参与拼团时间 */
+    private LocalDateTime validStartTime;
+    /** 拼团结束时间 - 拼团有效时长 */
+    private LocalDateTime validEndTime;
     /** 创建时间 */
     private LocalDateTime createTime;
-
     /** 更新时间 */
     private LocalDateTime updateTime;
 

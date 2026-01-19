@@ -11,13 +11,11 @@ import java.math.BigDecimal;
 /**
  * 营销支付订单实体
  * <p>
- * 领域定义：
- * 它是交易上下文（Trade Context）中的核心聚合根或核心实体。
- * 代表了一笔已经经过营销规则计算、并完成“锁单”动作的待支付交易单。
+ * 领域含义：交易上下文的核心聚合根。
+ * 作用：代表一笔经过营销计算、已完成“锁单”且待支付的交易单。
  *
  * @author XueLe
- * @version 1.0.0
- * @since 2026/01/07 18:05
+ * @since 2026/01/07
  */
 @Data
 @Builder
@@ -25,28 +23,24 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class MarketPayOrderEntity {
 
+    /** 拼团团队ID */
+    private String teamId;
+
     /**
-     * 预购订单ID (唯一标识)
+     * 预购订单ID (聚合根标识)
      * <p>
-     * 实体的身份ID。对应数据库 group_buy_order_list 中的 order_id。
-     * 也是后续唤起支付渠道（微信/支付宝）时的关联凭证。
+     * 对应 group_buy_order_list.order_id，也是支付渠道的关联凭证。
      */
     private String orderId;
 
-    /**
-     * 折扣金额
-     * <p>
-     * 记录这笔订单享受了多少优惠。
-     */
+    /** 优惠金额 (营销计算结果) */
     private BigDecimal deductionPrice;
 
-
     /**
-     * 交易订单状态枚举
+     * 交易订单状态
      * <p>
-     * 描述实体的生命周期节点 (如：创建/锁单、已完成、失败/关闭)。
-     * 这是一个值对象 (VO) 属性，用于描述实体的当前状态。
+     * 描述订单生命周期 (如：创建锁单、支付完成、交易关闭)。
      */
-    private TradeOrderStatusEnumVO tradeOrderStatusEnumVO;
+    private TradeOrderStatusEnumVO tradeOrderStatus;
 
 }

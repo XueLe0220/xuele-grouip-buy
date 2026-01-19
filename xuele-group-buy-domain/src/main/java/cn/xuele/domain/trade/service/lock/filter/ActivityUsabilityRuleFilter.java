@@ -1,10 +1,10 @@
-package cn.xuele.domain.trade.service.filter;
+package cn.xuele.domain.trade.service.lock.filter;
 
 import cn.xuele.domain.trade.adapter.repository.ITradeRepository;
 import cn.xuele.domain.trade.model.entity.GroupBuyActivityEntity;
-import cn.xuele.domain.trade.model.entity.TradeRuleCommandEntity;
-import cn.xuele.domain.trade.model.entity.TradeRuleFilterBackEntity;
-import cn.xuele.domain.trade.service.fatcory.TradeRuleFilterFactory;
+import cn.xuele.domain.trade.model.entity.TradeLockRuleCommandEntity;
+import cn.xuele.domain.trade.model.entity.TradeLockRuleFilterBackEntity;
+import cn.xuele.domain.trade.service.lock.fatcory.TradeLockRuleFilterFactory;
 import cn.xuele.types.design.framework.link.handler.ILogicHandler;
 import cn.xuele.types.enums.ActivityStatusEnumVO;
 import cn.xuele.types.enums.ResponseCode;
@@ -28,13 +28,13 @@ import java.time.LocalDateTime;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ActivityUsabilityRuleFilter implements ILogicHandler<TradeRuleCommandEntity, TradeRuleFilterFactory.DynamicContext, TradeRuleFilterBackEntity> {
+public class ActivityUsabilityRuleFilter implements ILogicHandler<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> {
 
     // 【修复】必须加 final，否则 @RequiredArgsConstructor 不会生成构造注入，导致空指针
     private final ITradeRepository repository;
 
     @Override
-    public TradeRuleFilterBackEntity apply(TradeRuleCommandEntity requestParameter, TradeRuleFilterFactory.DynamicContext dynamicContext) throws Exception {
+    public TradeLockRuleFilterBackEntity apply(TradeLockRuleCommandEntity requestParameter, TradeLockRuleFilterFactory.DynamicContext dynamicContext) throws Exception {
         log.info("交易规则过滤-活动可用性校验 userId:{} activityId:{}", requestParameter.getUserId(), requestParameter.getActivityId());
 
         // 1. 查询活动详情

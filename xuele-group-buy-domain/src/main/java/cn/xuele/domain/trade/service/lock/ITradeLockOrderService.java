@@ -1,4 +1,4 @@
-package cn.xuele.domain.trade.service;
+package cn.xuele.domain.trade.service.lock;
 
 import cn.xuele.domain.trade.model.entity.MarketPayOrderEntity;
 import cn.xuele.domain.trade.model.entity.PayActivityEntity;
@@ -16,7 +16,7 @@ import cn.xuele.domain.trade.model.valobj.GroupBuyProgressVO;
  * @version 1.0.0
  * @since 2026/01/07 18:04
  */
-public interface ITradeOrderService {
+public interface ITradeLockOrderService {
 
     /**
      * 查询未支付的营销订单（防重/幂等性检查）

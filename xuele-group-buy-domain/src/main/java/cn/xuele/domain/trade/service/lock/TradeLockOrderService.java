@@ -1,15 +1,15 @@
-package cn.xuele.domain.trade.service;
+package cn.xuele.domain.trade.service.lock;
 
 import cn.xuele.domain.trade.adapter.repository.ITradeRepository;
-import cn.xuele.domain.trade.model.aggregate.GroupBuyOrderAggregate;
+import cn.xuele.domain.trade.model.aggregate.GroupBuyLockOrderAggregate;
 import cn.xuele.domain.trade.model.entity.MarketPayOrderEntity;
 import cn.xuele.domain.trade.model.entity.PayActivityEntity;
 import cn.xuele.domain.trade.model.entity.PayDiscountEntity;
-import cn.xuele.domain.trade.model.entity.TradeRuleCommandEntity;
-import cn.xuele.domain.trade.model.entity.TradeRuleFilterBackEntity;
+import cn.xuele.domain.trade.model.entity.TradeLockRuleCommandEntity;
+import cn.xuele.domain.trade.model.entity.TradeLockRuleFilterBackEntity;
 import cn.xuele.domain.trade.model.entity.UserEntity;
 import cn.xuele.domain.trade.model.valobj.GroupBuyProgressVO;
-import cn.xuele.domain.trade.service.fatcory.TradeRuleFilterFactory;
+import cn.xuele.domain.trade.service.lock.fatcory.TradeLockRuleFilterFactory;
 import cn.xuele.types.design.framework.link.chain.BusinessLinkedList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,13 +29,13 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class TradeOrderService implements ITradeOrderService {
+public class TradeLockOrderService implements ITradeLockOrderService {
 
     // 注入仓储接口（依赖倒置：只依赖接口，不依赖 Infra 层的具体实现）
     private final ITradeRepository tradeRepository;
 
-    private final BusinessLinkedList<TradeRuleCommandEntity, TradeRuleFilterFactory.DynamicContext,
-            TradeRuleFilterBackEntity> tradeRuleFilter;
+    private final BusinessLinkedList<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext,
+            TradeLockRuleFilterBackEntity> tradeLockRuleFilter;
 
     @Override
     public MarketPayOrderEntity queryNoPayMarketPayOrderByOutTradeNo(String userId, String outTradeNo) {
@@ -56,17 +56,17 @@ public class TradeOrderService implements ITradeOrderService {
                 userEntity.getUserId(), payActivityEntity.getActivityId(), payDiscountEntity.getDeductionPrice());
 
         // 交易规则过滤
-        TradeRuleFilterBackEntity tradeRuleFilterBackEntity = tradeRuleFilter.apply(TradeRuleCommandEntity.builder()
+        TradeLockRuleFilterBackEntity tradeRuleFilterBackEntity = tradeLockRuleFilter.apply(TradeLockRuleCommandEntity.builder()
                 .activityId(payActivityEntity.getActivityId())
                 .userId(userEntity.getUserId())
                 .build(),
-                new TradeRuleFilterFactory.DynamicContext());
+                new TradeLockRuleFilterFactory.DynamicContext());
 
         Integer userTakeOrderCount = tradeRuleFilterBackEntity.getUserTakeOrderCount();
 
         // 1. 组装聚合根 (Aggregate)
         // 这是 DDD 的核心步骤：将分散的实体打包成一个具有完整业务语义的聚合对象。
-        GroupBuyOrderAggregate groupBuyOrderAggregate = GroupBuyOrderAggregate.builder()
+        GroupBuyLockOrderAggregate groupBuyOrderAggregate = GroupBuyLockOrderAggregate.builder()
                 .userEntity(userEntity)
                 .payActivityEntity(payActivityEntity)
                 .payDiscountEntity(payDiscountEntity)

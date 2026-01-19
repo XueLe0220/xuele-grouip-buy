@@ -1,7 +1,11 @@
 package cn.xuele.infrastructure.dcc;
 
 import cn.xuele.types.annotation.DCCValue;
+import cn.xuele.types.common.Constants;
 import org.springframework.stereotype.Service;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 动态配置中心服务 (DCC Service)
@@ -39,6 +43,9 @@ public class DCCService {
      */
     @DCCValue("cutRange:100")
     private volatile String cutRange;
+
+    @DCCValue("scBlackList:s02c02")
+    private volatile String scBlackList;
 
     /**
      * 判断是否触发降级
@@ -80,5 +87,10 @@ public class DCCService {
             // 这里选择 false，安全起见不让通过
             return false;
         }
+    }
+
+    public boolean isSCBlackIntercept(String source, String channel) {
+        List<String> list = Arrays.asList(scBlackList.split(Constants.SPLIT));
+        return list.contains(source + channel);
     }
 }

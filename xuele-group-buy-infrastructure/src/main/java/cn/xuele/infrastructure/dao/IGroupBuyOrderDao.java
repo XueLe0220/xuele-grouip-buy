@@ -1,60 +1,83 @@
 package cn.xuele.infrastructure.dao;
 
+import cn.xuele.domain.trade.model.entity.GroupBuyTeamEntity;
 import cn.xuele.infrastructure.dao.po.GroupBuyOrder;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
- * 拼团组队主表 DAO 接口
+ * 拼团主表 DAO 接口
  * <p>
  * 对应表：group_buy_order
- * 职责：管理拼团的“团长/坑位”信息。
- * 核心功能：提供原子性的锁单操作，防止超卖。
+ * 职责：管理拼团队伍的生命周期（创建、锁单、结算、完成）。
  *
  * @author XueLe
  * @version 1.0.0
- * @since 2026/01/06 23:36
+ * @since 2026/01/06
  */
 @Mapper
 public interface IGroupBuyOrderDao {
 
     /**
-     * 查询拼团组队详情
-     * <p>
-     * 业务场景：
-     * 1. 在锁单前，查询当前团是否存在、配置的目标人数是多少。
-     * 2. 在前端展示拼团进度（还差几人成团）。
+     * 查询拼团进度详情
      *
-     * @param groupBuyOrderReq 查询条件（主要是 teamId）
-     * @return 组队详情 PO 对象
+     * @param groupBuyOrderReq 查询条件 (主要为 teamId)
+     * @return 拼团单 PO 对象
      */
     GroupBuyOrder queryGroupBuyProgress(GroupBuyOrder groupBuyOrderReq);
 
     /**
-     * 原子性扣减库存（核心防超卖）
+     * 锁单：原子性扣减库存 (乐观锁)
      * <p>
-     * 对应的 SQL 逻辑：
-     * UPDATE group_buy_order
-     * SET lock_count = lock_count + 1
-     * WHERE team_id = #{teamId}
-     * AND (lock_count + complete_count) < target_count
-     * <p>
-     * 返回值含义：
-     * 1：更新成功 -> 抢到了坑位，锁单成功。
-     * 0：更新失败 -> 坑位已满（或 teamId 不存在），锁单失败。
+     * 逻辑：lock_count + 1, 且需满足 (lock + complete) < target
      *
      * @param teamId 拼单组队ID
-     * @return 受影响的行数 (1 或 0)
+     * @return 1-锁单成功; 0-锁单失败(满员或不存在)
      */
-    int updateAddLockCount(String teamId);
+    int updateAddLockCount(@Param("teamId") String teamId);
 
     /**
-     * 插入新的拼团组队记录
-     * <p>
-     * 业务场景：
-     * 当用户选择“发起拼单”（而不是参与别人的团）时，需要创建一个新的团。
-     * 此时会生成一个新的 teamId，并初始化 lock_count = 0。
+     * 新增拼团主单 (开团)
      *
-     * @param groupBuyOrder 新团的 PO 对象
+     * @param groupBuyOrder 拼团单 PO
      */
     void insert(GroupBuyOrder groupBuyOrder);
+
+    /**
+     * 结算：原子性累加完成人数
+     * <p>
+     * 逻辑：complete_count + 1 (利用数据库行锁保证并发安全)
+     *
+     * @param teamId 拼单组队ID
+     * @return 1-更新成功; 0-更新失败
+     */
+    int AddCompleteCount(@Param("teamId") String teamId);
+
+    /**
+     * 查询当前拼团已完成人数
+     * <p>
+     * 用途：在更新后进行双重校验 (Double Check)，判断是否撞线成团。
+     *
+     * @param teamId 拼单组队ID
+     * @return 当前已完成人数
+     */
+    Integer queryGroupBuyTeamCompleteCountByTeamId(@Param("teamId") String teamId);
+
+    /**
+     * 更新拼团状态为完成 (COMPLETE)
+     * <p>
+     * 注意：应当包含 status=0 的条件以保证幂等性，防止重复触发。
+     *
+     * @param teamId 拼单组队ID
+     * @return 1-更新成功(撞线); 0-更新失败(已完成或状态不符)
+     */
+    int updateTeamStatus2COMPLETE(@Param("teamId") String teamId);
+
+    /**
+     * 查询拼团领域实体
+     *
+     * @param teamId 拼单组队ID
+     * @return 拼团主表实体 (用于构建聚合根)
+     */
+    GroupBuyOrder queryGroupBuyTeamByTeamId(@Param("teamId") String teamId);
 }

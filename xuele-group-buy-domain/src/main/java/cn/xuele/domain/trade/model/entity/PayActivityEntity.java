@@ -4,18 +4,17 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 /**
  * 支付活动实体
  * <p>
- * 领域定义：
- * 在交易（Trade）上下文中，它代表了当前这笔交易依附的“活动规则”和“组队环境”。
- * 它不是单纯的活动配置，而是包含了“当前队伍(teamId)”上下文的活动实体。
+ * 领域含义：交易上下文中的活动聚合实体。
+ * 作用：封装当前交易依附的“活动规则”与“队伍上下文”（不仅是静态配置，还包含当前队伍信息）。
  *
  * @author XueLe
- * @version 1.0.0
- * @since 2026/01/07 18:20
+ * @since 2026/01/07
  */
 @Data
 @Builder
@@ -23,52 +22,25 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class PayActivityEntity {
 
-    /**
-     * 拼单组队ID (关键标识)
-     * <p>
-     * 区分这笔交易是属于哪个“团”的。
-     * 如果是开团（新团），此字段可能在业务处理过程中生成；如果是参团，必须传入。
-     */
+    /** 拼团团队ID (区分归属的拼团队伍) */
     private String teamId;
 
-    /**
-     * 活动ID (关键标识)
-     * <p>
-     * 对应 group_buy_activity.activity_id。
-     * 所有的优惠规则、库存限制都挂载在这个ID下。
-     */
+    /** 活动ID (关联 group_buy_activity) */
     private Long activityId;
 
-    /**
-     * 活动名称
-     * <p>
-     * 用于订单快照记录，或者前端展示。
-     */
+    /** 活动名称 (用于快照记录或展示) */
     private String activityName;
 
-    /**
-     * 拼团开始时间
-     * <p>
-     * 业务校验点：当前时间必须 >= startTime，否则活动未开始，锁单应失败。
-     * (已升级为 LocalDateTime)
-     */
+    /** 活动开始时间 (用于校验活动是否开启) */
     private LocalDateTime startTime;
 
-    /**
-     * 拼团结束时间
-     * <p>
-     * 业务校验点：当前时间必须 <= endTime，否则活动已结束，锁单应失败。
-     * (已升级为 LocalDateTime)
-     */
+    /** 活动结束时间 (用于校验活动是否过期) */
     private LocalDateTime endTime;
 
-    /**
-     * 目标数量
-     * <p>
-     * 也就是“成团门槛”，例如 3人成团。
-     * 对应 group_buy_activity.target。
-     * 在锁单逻辑中，用于校验 (lockCount + completeCount) < targetCount。
-     */
+    /** 成团目标数 (如3人团，核心校验参数) */
     private Integer targetCount;
+
+    /** 拼团有效时长 (单位：分钟) */
+    private Integer validTime;
 
 }

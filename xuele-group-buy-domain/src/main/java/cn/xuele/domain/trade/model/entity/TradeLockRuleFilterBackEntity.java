@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 交易规则过滤指令实体
+ * 交易规则过滤反馈实体
  *
  * @author XueLe
  * @version 1.0.0
@@ -16,12 +16,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class TradeRuleCommandEntity {
+public class TradeLockRuleFilterBackEntity {
 
-    /** 用户ID（谁发起交易） */
-    private String userId;
-
-    /** 活动ID（参与哪个活动） */
-    private Long activityId;
+    /** 用户已参与该活动的订单数量（用于限购规则校验） */
+    private Integer userTakeOrderCount;
 
 }

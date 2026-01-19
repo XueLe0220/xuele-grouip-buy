@@ -1,10 +1,10 @@
-package cn.xuele.domain.trade.service.filter;
+package cn.xuele.domain.trade.service.lock.filter;
 
 import cn.xuele.domain.trade.adapter.repository.ITradeRepository;
 import cn.xuele.domain.trade.model.entity.GroupBuyActivityEntity;
-import cn.xuele.domain.trade.model.entity.TradeRuleCommandEntity;
-import cn.xuele.domain.trade.model.entity.TradeRuleFilterBackEntity;
-import cn.xuele.domain.trade.service.fatcory.TradeRuleFilterFactory;
+import cn.xuele.domain.trade.model.entity.TradeLockRuleCommandEntity;
+import cn.xuele.domain.trade.model.entity.TradeLockRuleFilterBackEntity;
+import cn.xuele.domain.trade.service.lock.fatcory.TradeLockRuleFilterFactory;
 import cn.xuele.types.design.framework.link.handler.ILogicHandler;
 import cn.xuele.types.enums.ResponseCode;
 import cn.xuele.types.exception.AppException;
@@ -25,12 +25,12 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserTakeLimitRuleFilter implements ILogicHandler<TradeRuleCommandEntity, TradeRuleFilterFactory.DynamicContext, TradeRuleFilterBackEntity> {
+public class UserTakeLimitRuleFilter implements ILogicHandler<TradeLockRuleCommandEntity, TradeLockRuleFilterFactory.DynamicContext, TradeLockRuleFilterBackEntity> {
 
     private final ITradeRepository repository;
 
     @Override
-    public TradeRuleFilterBackEntity apply(TradeRuleCommandEntity requestParameter, TradeRuleFilterFactory.DynamicContext dynamicContext) throws Exception {
+    public TradeLockRuleFilterBackEntity apply(TradeLockRuleCommandEntity requestParameter, TradeLockRuleFilterFactory.DynamicContext dynamicContext) throws Exception {
         log.info("交易规则过滤-用户参与次数校验 userId:{} activityId:{}", requestParameter.getUserId(), requestParameter.getActivityId());
 
         // 1. 从上下文中获取活动配置（上一节点塞进去的）

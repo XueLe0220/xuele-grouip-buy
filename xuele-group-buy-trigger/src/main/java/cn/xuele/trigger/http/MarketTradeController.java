@@ -13,7 +13,7 @@ import cn.xuele.domain.trade.model.entity.PayActivityEntity;
 import cn.xuele.domain.trade.model.entity.PayDiscountEntity;
 import cn.xuele.domain.trade.model.entity.UserEntity;
 import cn.xuele.domain.trade.model.valobj.GroupBuyProgressVO;
-import cn.xuele.domain.trade.service.ITradeOrderService;
+import cn.xuele.domain.trade.service.lock.ITradeLockOrderService;
 import cn.xuele.types.enums.ResponseCode;
 import cn.xuele.types.exception.AppException;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class MarketTradeController implements IMarketTradeService {
     private final IIndexGroupBuyMarketService indexGroupBuyMarketService;
 
     /** 交易领域服务：负责订单创建、状态流转、预占库存/名额 */
-    private final ITradeOrderService tradeOrderService;
+    private final ITradeLockOrderService tradeOrderService;
 
     /**
      * 营销拼团锁单
@@ -109,6 +109,7 @@ public class MarketTradeController implements IMarketTradeService {
                             .startTime(discountVO.getStartTime())
                             .endTime(discountVO.getEndTime())
                             .targetCount(discountVO.getTarget())
+                            .validTime(discountVO.getValidTime())
                             .build(),
                     PayDiscountEntity.builder()
                             .source(requestDTO.getSource())
@@ -143,7 +144,7 @@ public class MarketTradeController implements IMarketTradeService {
                 .data(LockMarketPayOrderResponseDTO.builder()
                         .orderId(order.getOrderId())
                         .deductionPrice(order.getDeductionPrice())
-                        .tradeOrderStatus(order.getTradeOrderStatusEnumVO().getCode())
+                        .tradeOrderStatus(order.getTradeOrderStatus().getCode())
                         .build())
                 .build();
     }
