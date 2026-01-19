@@ -34,4 +34,13 @@ public interface INotifyTaskDao {
      */
     void insert(NotifyTask notifyTask);
 
+    List<NotifyTask> queryUnExecutedNotifyTaskList();
+
+    NotifyTask queryUnExecutedNotifyTaskByTeamId(String teamId);
+
+    int updateNotifyTaskStatusSuccess(String teamId);
+
+    int updateNotifyTaskStatusError(String teamId);
+
+    int updateNotifyTaskStatusRetry(String teamId);
 }

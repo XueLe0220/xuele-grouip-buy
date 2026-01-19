@@ -52,4 +52,7 @@ public class GroupBuyTeamEntity {
      */
     private LocalDateTime validEndTime;
 
+    /** 回调地址 */
+    private String notifyUrl;
+
 }

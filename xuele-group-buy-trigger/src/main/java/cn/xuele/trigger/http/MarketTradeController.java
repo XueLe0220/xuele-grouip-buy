@@ -56,7 +56,7 @@ public class MarketTradeController implements IMarketTradeService {
             log.info("营销交易锁单-开始 userId:{} outTradeNo:{}", requestDTO.getUserId(), requestDTO.getOutTradeNo());
 
             // 1. 基础参数非空校验
-            if (StringUtils.isAnyBlank(requestDTO.getUserId(), requestDTO.getGoodsId()) || null == requestDTO.getActivityId()) {
+            if (StringUtils.isAnyBlank(requestDTO.getUserId(), requestDTO.getGoodsId(), requestDTO.getNotifyUrl()) || null == requestDTO.getActivityId()) {
                 return Response.<LockMarketPayOrderResponseDTO>builder()
                         .code(ResponseCode.ILLEGAL_PARAMETER.getCode())
                         .info(ResponseCode.ILLEGAL_PARAMETER.getInfo())
@@ -120,6 +120,7 @@ public class MarketTradeController implements IMarketTradeService {
                             .deductionPrice(trialBalance.getDeductionPrice())
                             .payPrice(trialBalance.getPayPrice())
                             .outTradeNo(requestDTO.getOutTradeNo())
+                            .notifyUrl(requestDTO.getNotifyUrl())
                             .build());
 
             log.info("营销交易锁单-成功 userId:{} orderId:{}", requestDTO.getUserId(), newOrder.getOrderId());

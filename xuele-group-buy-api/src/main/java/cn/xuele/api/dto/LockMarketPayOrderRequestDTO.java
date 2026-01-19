@@ -33,4 +33,7 @@ public class LockMarketPayOrderRequestDTO {
     /** 外部交易单号，用于幂等性校验和支付回调关联 */
     private String outTradeNo;
 
+    /** 回调地址 */
+    private String notifyUrl;
+
 }

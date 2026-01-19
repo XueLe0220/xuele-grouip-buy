@@ -57,5 +57,7 @@ public class GroupBuyOrder {
     private LocalDateTime createTime;
     /** 更新时间 */
     private LocalDateTime updateTime;
+    /** 回调地址 */
+    private String notifyUrl;
 
 }

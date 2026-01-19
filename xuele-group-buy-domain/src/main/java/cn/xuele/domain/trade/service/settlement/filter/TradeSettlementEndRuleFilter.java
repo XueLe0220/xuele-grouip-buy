@@ -30,7 +30,7 @@ public class TradeSettlementEndRuleFilter implements ILogicHandler<TradeSettleme
         // 1. 日志记录：标记流程结束
         log.info("结算规则过滤-结束节点 exec. userId:{} outTradeNo:{}", requestParameter.getUserId(), requestParameter.getOutTradeNo());
 
-        // 2. 获取上下文对象 (这是前面的 Filter 查出来放进去的)
+        // 2. 获取上下文对象
         GroupBuyTeamEntity groupBuyTeamEntity = dynamicContext.getGroupBuyTeamEntity();
 
         // 3. 返回封装数据 (Data Transfer)
@@ -43,6 +43,7 @@ public class TradeSettlementEndRuleFilter implements ILogicHandler<TradeSettleme
                 .status(groupBuyTeamEntity.getStatus())
                 .validStartTime(groupBuyTeamEntity.getValidStartTime())
                 .validEndTime(groupBuyTeamEntity.getValidEndTime())
+                .notifyUrl(groupBuyTeamEntity.getNotifyUrl())
                 .build();
     }
 }

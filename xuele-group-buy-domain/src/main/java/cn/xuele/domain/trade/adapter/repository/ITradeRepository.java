@@ -5,7 +5,10 @@ import cn.xuele.domain.trade.model.aggregate.GroupBuyTeamSettlementAggregate;
 import cn.xuele.domain.trade.model.entity.GroupBuyActivityEntity;
 import cn.xuele.domain.trade.model.entity.GroupBuyTeamEntity;
 import cn.xuele.domain.trade.model.entity.MarketPayOrderEntity;
+import cn.xuele.domain.trade.model.entity.NotifyTaskEntity;
 import cn.xuele.domain.trade.model.valobj.GroupBuyProgressVO;
+
+import java.util.List;
 
 /**
  * 交易仓储接口
@@ -64,9 +67,19 @@ public interface ITradeRepository {
 
     Integer queryOrderCountByActivityIdAndUserId(Long activityId, String userId);
 
-    void settlement(GroupBuyTeamSettlementAggregate groupBuyTeamSettlementAggregate);
+    boolean settlement(GroupBuyTeamSettlementAggregate groupBuyTeamSettlementAggregate);
 
     boolean isSCBlackIntercept(String source, String channel);
 
     GroupBuyTeamEntity queryGroupBuyTeamByTeamId(String teamId);
+
+    List<NotifyTaskEntity> queryUnExecutedNotifyTaskList();
+
+    List<NotifyTaskEntity> queryUnExecutedNotifyTaskList(String teamId);
+
+    int updateNotifyTaskStatusSuccess(String teamId);
+
+    int updateNotifyTaskStatusError(String teamId);
+
+    int updateNotifyTaskStatusRetry(String teamId);
 }

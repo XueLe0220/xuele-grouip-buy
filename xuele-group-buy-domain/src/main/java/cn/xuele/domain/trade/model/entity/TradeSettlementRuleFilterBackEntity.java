@@ -52,4 +52,7 @@ public class TradeSettlementRuleFilterBackEntity {
      * (已标准化为 LocalDateTime)
      */
     private LocalDateTime validEndTime;
+
+    /** 回调地址 */
+    private String notifyUrl;
 }

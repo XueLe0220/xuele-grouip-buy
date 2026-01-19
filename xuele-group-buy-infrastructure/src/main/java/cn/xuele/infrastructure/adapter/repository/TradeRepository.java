@@ -6,6 +6,7 @@ import cn.xuele.domain.trade.model.aggregate.GroupBuyTeamSettlementAggregate;
 import cn.xuele.domain.trade.model.entity.GroupBuyActivityEntity;
 import cn.xuele.domain.trade.model.entity.GroupBuyTeamEntity;
 import cn.xuele.domain.trade.model.entity.MarketPayOrderEntity;
+import cn.xuele.domain.trade.model.entity.NotifyTaskEntity;
 import cn.xuele.domain.trade.model.entity.PayActivityEntity;
 import cn.xuele.domain.trade.model.entity.PayDiscountEntity;
 import cn.xuele.domain.trade.model.entity.TradePaySettlementEntity;
@@ -35,6 +36,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -139,6 +142,7 @@ public class TradeRepository implements ITradeRepository {
                     .lockCount(1)
                     .validStartTime(startTime)
                     .validEndTime(endTime)
+                    .notifyUrl(payDiscountEntity.getNotifyUrl())
                     .build();
 
             // 插入新团记录
@@ -221,7 +225,7 @@ public class TradeRepository implements ITradeRepository {
 
     @Transactional(rollbackFor = Exception.class, timeout = 500)
     @Override
-    public void settlement(GroupBuyTeamSettlementAggregate aggregate) {
+    public boolean settlement(GroupBuyTeamSettlementAggregate aggregate) {
 
         // 1. 解包参数
         UserEntity userReq = aggregate.getUserEntity();
@@ -266,7 +270,7 @@ public class TradeRepository implements ITradeRepository {
                 NotifyTask notifyTask = new NotifyTask();
                 notifyTask.setActivityId(teamReq.getActivityId());
                 notifyTask.setTeamId(teamReq.getTeamId());
-                notifyTask.setNotifyUrl("暂无");
+                notifyTask.setNotifyUrl(teamReq.getNotifyUrl());
                 notifyTask.setNotifyCount(0);
                 notifyTask.setNotifyStatus(0);
                 notifyTask.setParameterJson(JSON.toJSONString(new HashMap<String, Object>() {{
@@ -275,8 +279,10 @@ public class TradeRepository implements ITradeRepository {
                 }}));
 
                 notifyTaskDao.insert(notifyTask);
+                return true;
             }
         }
+        return false;
     }
 
     @Override
@@ -296,6 +302,55 @@ public class TradeRepository implements ITradeRepository {
                 .status(GroupBuyTeamOrderVO.valueOf(groupBuyOrder.getStatus()))
                 .validStartTime(groupBuyOrder.getValidStartTime())
                 .validEndTime(groupBuyOrder.getValidEndTime())
+                .notifyUrl(groupBuyOrder.getNotifyUrl())
                 .build();
+    }
+
+    @Override
+    public List<NotifyTaskEntity> queryUnExecutedNotifyTaskList() {
+        List<NotifyTask> notifyTaskList = notifyTaskDao.queryUnExecutedNotifyTaskList();
+        if (notifyTaskList.isEmpty()) return new ArrayList<>();
+
+        List<NotifyTaskEntity> notifyTaskEntities = new ArrayList<>();
+        for (NotifyTask notifyTask : notifyTaskList) {
+
+            NotifyTaskEntity notifyTaskEntity = NotifyTaskEntity.builder()
+                    .teamId(notifyTask.getTeamId())
+                    .notifyUrl(notifyTask.getNotifyUrl())
+                    .notifyCount(notifyTask.getNotifyCount())
+                    .parameterJson(notifyTask.getParameterJson())
+                    .build();
+
+            notifyTaskEntities.add(notifyTaskEntity);
+        }
+
+        return notifyTaskEntities;
+    }
+
+    @Override
+    public List<NotifyTaskEntity> queryUnExecutedNotifyTaskList(String teamId) {
+        NotifyTask notifyTask = notifyTaskDao.queryUnExecutedNotifyTaskByTeamId(teamId);
+        if (null == notifyTask) return new ArrayList<>();
+        return Collections.singletonList(NotifyTaskEntity.builder()
+                .teamId(notifyTask.getTeamId())
+                .notifyUrl(notifyTask.getNotifyUrl())
+                .notifyCount(notifyTask.getNotifyCount())
+                .parameterJson(notifyTask.getParameterJson())
+                .build());
+    }
+
+    @Override
+    public int updateNotifyTaskStatusSuccess(String teamId) {
+        return notifyTaskDao.updateNotifyTaskStatusSuccess(teamId);
+    }
+
+    @Override
+    public int updateNotifyTaskStatusError(String teamId) {
+        return notifyTaskDao.updateNotifyTaskStatusError(teamId);
+    }
+
+    @Override
+    public int updateNotifyTaskStatusRetry(String teamId) {
+        return notifyTaskDao.updateNotifyTaskStatusRetry(teamId);
     }
 }
