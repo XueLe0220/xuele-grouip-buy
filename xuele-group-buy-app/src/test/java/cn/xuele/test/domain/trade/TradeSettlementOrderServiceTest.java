@@ -12,7 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.time.LocalDateTime;
 
 /**
- * TODO: 类描述
+ * 拼团结算业务测试类
  *
  * @author XueLe
  * @version 1.0.0
