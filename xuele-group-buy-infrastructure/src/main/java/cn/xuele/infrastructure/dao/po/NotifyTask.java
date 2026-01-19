@@ -6,10 +6,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 /**
- * TODO: 类描述
+ * 持久化对象：拼团回调通知任务
+ * <p>
+ * 对应数据库表：notify_task
+ * 作用：记录每一次拼团成功的异步通知任务状态
  *
  * @author XueLe
  * @version 1.0.0
@@ -20,22 +22,33 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NotifyTask {
-    /** 自增ID */
+
+    /** 自增主键 ID */
     private Long id;
-    /** 活动ID */
+
+    /** 营销活动 ID */
     private Long activityId;
-    /** 拼单组队ID */
+
+    /** 拼单组队 ID (业务唯一索引) */
     private String teamId;
-    /** 回调接口 */
+
+    /** 回调通知地址 (HTTP接口) */
     private String notifyUrl;
-    /** 回调次数 */
+
+    /** 已重试次数 */
     private Integer notifyCount;
-    /** 回调状态【0初始、1完成、2重试、3失败】 */
+
+    /** * 通知状态
+     * @see cn.xuele.types.enums.NotifyTaskStatusEnum (0-初始, 1-完成, 2-重试, 3-失败)
+     */
     private Integer notifyStatus;
-    /** 参数对象 */
+
+    /** 请求参数 JSON 字符串 */
     private String parameterJson;
+
     /** 创建时间 */
     private LocalDateTime createTime;
+
     /** 更新时间 */
     private LocalDateTime updateTime;
 }
