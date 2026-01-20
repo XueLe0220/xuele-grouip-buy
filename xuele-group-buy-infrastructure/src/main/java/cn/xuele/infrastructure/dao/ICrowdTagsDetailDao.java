@@ -24,4 +24,6 @@ public interface ICrowdTagsDetailDao {
      * @param crowdTagsDetailReqList 明细 PO 对象列表
      */
     void addCrowdTagsUsers(List<CrowdTagsDetail> crowdTagsDetailReqList);
+
+    String queryTagIdByUserId(String userId);
 }

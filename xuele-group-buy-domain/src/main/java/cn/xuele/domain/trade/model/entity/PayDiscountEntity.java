@@ -1,5 +1,6 @@
 package cn.xuele.domain.trade.model.entity;
 
+import cn.xuele.domain.trade.model.valobj.NotifyConfigVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -48,8 +49,9 @@ public class PayDiscountEntity {
     /** 外部交易单号 */
     private String outTradeNo;
 
-    /** 回调地址 */
-    private String notifyUrl;
+
+    /** 回调配置 */
+    private NotifyConfigVO notifyConfigVO;
 
 
 }

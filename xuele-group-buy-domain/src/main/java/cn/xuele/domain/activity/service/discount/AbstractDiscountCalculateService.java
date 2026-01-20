@@ -37,7 +37,7 @@ public abstract class AbstractDiscountCalculateService implements IDiscountCalcu
         // 2. 人群标签过滤 (仅针对 TAG 类型优惠)
         if (DiscountTypeEnum.TAG.equals(discountType)) {
             // tagId 就是我们在大数据平台圈选的人群包ID
-            boolean isCrowdRange = filterTagId(groupBuyDiscount.getTagId(), userId);
+            boolean isCrowdRange = filterTagId(userId);
 
             // 如果不在人群范围内，不予优惠，直接返回原价
             if (!isCrowdRange) {
@@ -60,10 +60,9 @@ public abstract class AbstractDiscountCalculateService implements IDiscountCalcu
      * 人群标签校验
      * * @param userId 用户ID
      *
-     * @param tagId 人群标签ID (例如：ABCD_001 代表"高净值用户")
      * @return boolean true-在人群内(或无限制) / false-不在人群内
      */
-    private boolean filterTagId(String tagId, String userId) {
-        return repository.isUserInTag(tagId, userId);
+    private boolean filterTagId(String userId) {
+        return repository.isUserInTag(userId);
     }
 }

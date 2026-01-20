@@ -44,8 +44,8 @@ public class ITagServiceTest {
     public void test_tag_bitmap() {
         String tagId = "RQ_KJHKL98UU78H66554GFDV";
         // 是否存在
-        log.info("xuele 存在，预期结果为 true，测试结果:{}", repository.isUserInTag(tagId, "xuele"));
-        log.info("xiaofuge 不存在，预期结果为 false，测试结果:{}", repository.isUserInTag(tagId, "xiaofuge"));
+        log.info("xuele 存在，预期结果为 true，测试结果:{}", repository.isUserInTag("xuele"));
+        log.info("xiaofuge 不存在，预期结果为 false，测试结果:{}", repository.isUserInTag("xiaofuge"));
     }
 
     @Test

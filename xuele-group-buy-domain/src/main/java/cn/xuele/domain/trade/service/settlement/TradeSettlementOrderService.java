@@ -7,15 +7,19 @@ import cn.xuele.domain.trade.model.entity.*;
 import cn.xuele.domain.trade.service.settlement.factory.TradeSettlementRuleFilterFactory;
 import cn.xuele.types.design.framework.link.chain.BusinessLinkedList;
 import cn.xuele.types.enums.NotifyTaskHTTPEnumVO;
+import cn.xuele.types.exception.AppException;
 import com.alibaba.fastjson.JSON;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import cn.xuele.domain.trade.model.entity.NotifyTaskEntity;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 拼团交易结算领域服务实现
@@ -36,6 +40,7 @@ public class TradeSettlementOrderService implements ITradeSettlementOrderService
 
     private final ITradeRepository repository;
     private final ITradePort port;
+    private final ThreadPoolExecutor threadPoolExecutor;
 
     // 注入我们在 Factory 里定义的规则链
     private final BusinessLinkedList<TradeSettlementRuleCommandEntity,
@@ -70,7 +75,7 @@ public class TradeSettlementOrderService implements ITradeSettlementOrderService
                 .status(backEntity.getStatus())
                 .validStartTime(backEntity.getValidStartTime())
                 .validEndTime(backEntity.getValidEndTime())
-                .notifyUrl(backEntity.getNotifyUrl())
+                .notifyConfigVO(backEntity.getNotifyConfigVO())
                 .build();
 
         // 3. 构建聚合根 (这是数据一致性的最小单元)
@@ -81,12 +86,20 @@ public class TradeSettlementOrderService implements ITradeSettlementOrderService
                 .build();
 
         // 4. 拼团交易结算 (原子操作)
-        boolean isNotify = repository.settlement(groupBuyTeamSettlementAggregate);
+        NotifyTaskEntity notifyTaskEntity = repository.settlement(groupBuyTeamSettlementAggregate);
 
         // 5. 组队回调处理
-        if (isNotify) {
-            Map<String, Integer> notifyResultMap = executeSettlementNotifyTask(backEntity.getTeamId());
-            log.info("回调通知拼团完结 result:{}", JSON.toJSONString(notifyResultMap));
+        if (null != notifyTaskEntity) {
+            threadPoolExecutor.execute(() -> {
+                Map<String, Integer> notifyResultMap = null;
+                try {
+                    notifyResultMap = executeSettlementNotifyTask(notifyTaskEntity);
+                    log.info("回调通知拼团完结 result:{}", JSON.toJSONString(notifyResultMap));
+                } catch (Exception e) {
+                    log.error("回调通知拼团完结失败 result:{}", JSON.toJSONString(notifyResultMap), e);
+                    throw new AppException(e.getMessage());
+                }
+            });
         }
 
 
@@ -100,6 +113,12 @@ public class TradeSettlementOrderService implements ITradeSettlementOrderService
                 .activityId(groupBuyTeamEntity.getActivityId())
                 .outTradeNo(tradePaySettlementEntity.getOutTradeNo())
                 .build();
+    }
+
+    @Override
+    public Map<String, Integer> executeSettlementNotifyTask(NotifyTaskEntity notifyTaskEntity) throws Exception {
+        log.info("拼团交易-执行结算通知回调，指定 teamId:{} notifyTaskEntity:{}", notifyTaskEntity.getTeamId(), JSON.toJSONString(notifyTaskEntity));
+        return executeSettlementNotifyTask(Collections.singletonList(notifyTaskEntity));
     }
 
     @Override

@@ -67,7 +67,7 @@ public interface ITradeRepository {
 
     Integer queryOrderCountByActivityIdAndUserId(Long activityId, String userId);
 
-    boolean settlement(GroupBuyTeamSettlementAggregate groupBuyTeamSettlementAggregate);
+    NotifyTaskEntity settlement(GroupBuyTeamSettlementAggregate groupBuyTeamSettlementAggregate);
 
     boolean isSCBlackIntercept(String source, String channel);
 

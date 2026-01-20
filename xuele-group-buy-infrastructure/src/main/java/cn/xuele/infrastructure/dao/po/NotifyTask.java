@@ -32,15 +32,19 @@ public class NotifyTask {
     /** 拼单组队 ID (业务唯一索引) */
     private String teamId;
 
+    /** 回调类型 */
+    private String notifyType;
+
+    /** 回调消息 */
+    private String notifyMQ;
+
     /** 回调通知地址 (HTTP接口) */
     private String notifyUrl;
 
     /** 已重试次数 */
     private Integer notifyCount;
 
-    /** * 通知状态
-     * @see cn.xuele.types.enums.NotifyTaskStatusEnum (0-初始, 1-完成, 2-重试, 3-失败)
-     */
+    /** 通知状态 */
     private Integer notifyStatus;
 
     /** 请求参数 JSON 字符串 */

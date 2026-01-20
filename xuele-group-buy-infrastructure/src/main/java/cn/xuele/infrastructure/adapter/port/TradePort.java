@@ -2,6 +2,8 @@ package cn.xuele.infrastructure.adapter.port;
 
 import cn.xuele.domain.trade.adapter.port.ITradePort;
 import cn.xuele.domain.trade.model.entity.NotifyTaskEntity;
+import cn.xuele.domain.trade.model.valobj.NotifyTypeEnumVO;
+import cn.xuele.infrastructure.event.EventPublisher;
 import cn.xuele.infrastructure.gateway.GroupBuyNotifyService;
 import cn.xuele.types.enums.NotifyTaskHTTPEnumVO;
 import lombok.RequiredArgsConstructor;
@@ -31,8 +33,11 @@ public class TradePort implements ITradePort {
 
     private final RedissonClient redissonClient;
     private final GroupBuyNotifyService groupBuyNotifyService;
+    private final EventPublisher publisher;
 
-    /** 分布式锁 Key 前缀 */
+    /**
+     * 分布式锁 Key 前缀
+     */
     private static final String NOTIFY_TASK_JOB_KEY = "notify_job_lock_key_";
 
     @Override
@@ -47,15 +52,25 @@ public class TradePort implements ITradePort {
             if (lock.tryLock(0, -1, TimeUnit.SECONDS)) {
 
                 try {
-                    // 3. 校验参数 (防御性编程)
-                    if (StringUtils.isBlank(notifyTask.getNotifyUrl()) || "暂无".equals(notifyTask.getNotifyUrl())) {
-                        log.warn("回调地址为空，跳过执行 teamId:{}", notifyTask.getTeamId());
+                    // HTTP调用
+                    if (NotifyTypeEnumVO.HTTP.getCode().equals(notifyTask.getNotifyType())) {
+
+                        // 校验参数 (防御性编程)
+                        if (StringUtils.isBlank(notifyTask.getNotifyUrl()) || "暂无".equals(notifyTask.getNotifyUrl())) {
+                            log.warn("回调地址为空，跳过执行 teamId:{}", notifyTask.getTeamId());
+                            return NotifyTaskHTTPEnumVO.SUCCESS.getCode();
+                        }
+                        // 执行真正的 HTTP 网关调用
+                        return groupBuyNotifyService.groupBuyNotify(notifyTask.getNotifyUrl(),
+                                notifyTask.getParameterJson());
+                    }
+
+                    // MQ调用
+                    if (NotifyTypeEnumVO.MQ.getCode().equals(notifyTask.getNotifyType())) {
+                        publisher.publish(notifyTask.getNotifyMQ(), notifyTask.getParameterJson());
                         return NotifyTaskHTTPEnumVO.SUCCESS.getCode();
                     }
 
-                    // 4. 执行真正的 HTTP 网关调用
-                    return groupBuyNotifyService.groupBuyNotify(notifyTask.getNotifyUrl(),
-                            notifyTask.getParameterJson());
                 } finally {
                     // 5. 安全释放锁 (只能释放自己持有的锁)
                     if (lock.isLocked() && lock.isHeldByCurrentThread()) {

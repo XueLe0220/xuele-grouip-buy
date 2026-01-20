@@ -65,7 +65,7 @@ public class TagNode extends AbstractGroupBuyMarketSupport {
 
         // 3.【BitMap 校验】
         // 调用基础设施层，查询 Redis BitMap 确认用户是否在白名单中
-        boolean isWithin = repository.isUserInTag(tagId, requestParameter.getUserId());
+        boolean isWithin = repository.isUserInTag(requestParameter.getUserId());
 
         // 4.【混合逻辑判定】
         // 核心逻辑：(活动本来就开放) || (用户拥有白名单钥匙)

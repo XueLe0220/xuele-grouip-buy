@@ -35,5 +35,5 @@ public interface IActivityRepository {
 
     boolean cutRange(String userId);
 
-    boolean isUserInTag(String tagId, String userId);
+    boolean isUserInTag(String userId);
 }

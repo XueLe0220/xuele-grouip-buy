@@ -6,6 +6,7 @@ import cn.xuele.domain.activity.model.valobj.DiscountTypeEnum;
 import cn.xuele.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import cn.xuele.domain.activity.model.valobj.SCSkuActivityVO;
 import cn.xuele.domain.activity.model.valobj.SkuVO;
+import cn.xuele.infrastructure.dao.ICrowdTagsDetailDao;
 import cn.xuele.infrastructure.dao.IGroupBuyActivityDao;
 import cn.xuele.infrastructure.dao.IGroupBuyDiscountDao;
 import cn.xuele.infrastructure.dao.ISCSkuActivityDao;
@@ -43,6 +44,7 @@ public class ActivityRepository implements IActivityRepository {
     private final IGroupBuyDiscountDao groupBuyDiscountDao;
     private final ISkuDao skuDao;
     private final ISCSkuActivityDao scSkuActivityDao;
+    private final ICrowdTagsDetailDao crowdTagsDetailDao;
     private final DCCService dccService;
     private final RedissonClient redissonClient;
 
@@ -153,7 +155,8 @@ public class ActivityRepository implements IActivityRepository {
     }
 
     @Override
-    public boolean isUserInTag(String tagId, String userId) {
+    public boolean isUserInTag(String userId) {
+        String tagId = crowdTagsDetailDao.queryTagIdByUserId(userId);
         RBitSet bitSet = redissonClient.getBitSet(RedisBitMapUtils.getTagBitMapKey(tagId));
         return bitSet.get(RedisBitMapUtils.getIndexFromUserId(userId));
     }

@@ -2,6 +2,8 @@ package cn.xuele.api;
 
 import cn.xuele.api.dto.LockMarketPayOrderRequestDTO;
 import cn.xuele.api.dto.LockMarketPayOrderResponseDTO;
+import cn.xuele.api.dto.SettlementMarketPayOrderRequestDTO;
+import cn.xuele.api.dto.SettlementMarketPayOrderResponseDTO;
 import cn.xuele.api.response.Response;
 
 /**
@@ -31,4 +33,5 @@ public interface IMarketTradeService {
      */
     Response<LockMarketPayOrderResponseDTO> lockMarketPayOrder(LockMarketPayOrderRequestDTO lockMarketPayOrderRequestDTO);
 
+    Response<SettlementMarketPayOrderResponseDTO> settlementMarketPayOrder( SettlementMarketPayOrderRequestDTO requestDTO);
 }

@@ -1,5 +1,6 @@
 package cn.xuele.domain.trade.model.entity;
 
+import cn.xuele.domain.trade.model.valobj.NotifyConfigVO;
 import cn.xuele.types.enums.GroupBuyTeamOrderVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -52,7 +53,8 @@ public class GroupBuyTeamEntity {
      */
     private LocalDateTime validEndTime;
 
-    /** 回调地址 */
-    private String notifyUrl;
+
+    /** 回调配置 */
+    private NotifyConfigVO notifyConfigVO;
 
 }

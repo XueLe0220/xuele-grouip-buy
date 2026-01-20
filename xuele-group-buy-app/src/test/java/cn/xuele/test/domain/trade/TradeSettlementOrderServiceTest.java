@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * 拼团结算业务测试类
@@ -30,10 +31,13 @@ public class TradeSettlementOrderServiceTest {
         tradePaySettlementEntity.setSource("s01");
         tradePaySettlementEntity.setChannel("c01");
         tradePaySettlementEntity.setUserId("xuele");
-        tradePaySettlementEntity.setOutTradeNo("541615807640");
+        tradePaySettlementEntity.setOutTradeNo("025530705810");
         tradePaySettlementEntity.setOutTradeTime(LocalDateTime.now());
         TradeSettlementEntity tradeSettlementEntity = tradeSettlementOrderService.settlement(tradePaySettlementEntity);
         log.info("请求参数:{}", JSON.toJSONString(tradePaySettlementEntity));
         log.info("测试结果:{}", JSON.toJSONString(tradeSettlementEntity));
+
+        // 暂停，等待MQ消息。处理完后，手动关闭程序
+        new CountDownLatch(1).await();
     }
 }

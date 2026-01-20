@@ -12,10 +12,13 @@ import cn.xuele.types.common.RedisBitMapUtils;
 import com.google.common.hash.Hashing;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBatch;
 import org.redisson.api.RBitSet;
+import org.redisson.api.RBitSetAsync;
 import org.redisson.api.RedissonClient;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -79,14 +82,15 @@ public class TagRepository implements ITagRepository {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void addCrowdTagsUsers(String tagId, List<String> userIdList) {
-        // 1. 防御性检查：列表为空则直接返回，避免无效数据库交互
+        // 1. 防御性检查
         if (null == userIdList || userIdList.isEmpty()) {
             return;
         }
 
-        // 2. 数据转换：List<String> -> List<CrowdTagsDetail PO>
-        List<CrowdTagsDetail> crowdTagsDetailReqList = new ArrayList<>();
+        // 2. 数据转换：指定 ArrayList 初始容量，避免频繁扩容
+        List<CrowdTagsDetail> crowdTagsDetailReqList = new ArrayList<>(userIdList.size());
         for (String userId : userIdList) {
             CrowdTagsDetail crowdTagsDetail = CrowdTagsDetail.builder()
                     .tagId(tagId)
@@ -95,20 +99,33 @@ public class TagRepository implements ITagRepository {
             crowdTagsDetailReqList.add(crowdTagsDetail);
         }
 
+        // 3. 批量插入
+        // 【重要】：请修改 SQL 为 INSERT IGNORE 或 ON DUPLICATE KEY UPDATE
+        // 这样就不需要 Java 层面的 try-catch 来吞掉异常了，且能保证部分成功
+        crowdTagsDetailDao.addCrowdTagsUsers(crowdTagsDetailReqList);
+
+        // 4. Redis 缓存优化 (使用 Pipeline/Batch)
+        String cacheKey = BITMAP_KEY_PREFIX + tagId;
+
+        // 创建批量操作对象
+        RBatch batch = redissonClient.createBatch();
+        // 获取异步的 BitSet 对象
+        RBitSetAsync bitSetAsync = batch.getBitSet(cacheKey);
+
+        for (String userId : userIdList) {
+            // 这里只是将命令加入队列，并未发送网络请求
+            long offset = RedisBitMapUtils.getIndexFromUserId(userId);
+            log.info(">>>>>> 正在写入用户: [{}], 计算出的 Offset 是: [{}]", userId, offset);
+            bitSetAsync.setAsync(offset, true);
+        }
 
         try {
-            // 3. 批量插入
-            crowdTagsDetailDao.addCrowdTagsUsers(crowdTagsDetailReqList);
-        } catch (DuplicateKeyException ignore) {
-            // 暂时忽略唯一索引冲突
+            // 一次性把所有命令发给 Redis 执行
+            batch.execute();
+        } catch (Exception e) {
+            // 如果 Redis 失败，根据业务决定是否回滚 DB 或记录日志补偿
+            log.error("人群标签 Redis 批量写入失败 tagId:{}", tagId, e);
+            throw e;
         }
-
-        // redis 缓存
-        String cacheKey = BITMAP_KEY_PREFIX + tagId;
-        RBitSet bitSet = redissonClient.getBitSet(cacheKey);
-        for (String userId : userIdList) {
-            bitSet.set(RedisBitMapUtils.getIndexFromUserId(userId), true);
-        }
-
     }
 }
