@@ -99,14 +99,15 @@ public class TagRepository implements ITagRepository {
         try {
             // 3. 批量插入
             crowdTagsDetailDao.addCrowdTagsUsers(crowdTagsDetailReqList);
-            // redis 缓存
-            String cacheKey = BITMAP_KEY_PREFIX + tagId;
-            RBitSet bitSet = redissonClient.getBitSet(cacheKey);
-            for (String userId : userIdList) {
-                bitSet.set(RedisBitMapUtils.getIndexFromUserId(userId), true);
-            }
         } catch (DuplicateKeyException ignore) {
             // 暂时忽略唯一索引冲突
+        }
+
+        // redis 缓存
+        String cacheKey = BITMAP_KEY_PREFIX + tagId;
+        RBitSet bitSet = redissonClient.getBitSet(cacheKey);
+        for (String userId : userIdList) {
+            bitSet.set(RedisBitMapUtils.getIndexFromUserId(userId), true);
         }
 
     }

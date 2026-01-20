@@ -1,8 +1,13 @@
 package cn.xuele.test;
 
+import cn.xuele.infrastructure.event.EventPublisher;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.util.concurrent.CountDownLatch;
 
 @Slf4j
 @SpringBootTest
@@ -13,4 +18,23 @@ public class ApiTest {
         log.info("测试完成");
     }
 
+    @Resource
+    private EventPublisher publisher;
+
+    @Value("${spring.rabbitmq.config.producer.topic_team_success.routing_key}")
+    private String routingKey;
+
+    @Test
+    public void test_rabbitmq() throws InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+
+        publisher.publish(routingKey, "订单结算：ORD-20231234");
+        publisher.publish(routingKey, "订单结算：ORD-20231235");
+        publisher.publish(routingKey, "订单结算：ORD-20231236");
+        publisher.publish(routingKey, "订单结算：ORD-20231237");
+        publisher.publish(routingKey, "订单结算：ORD-20231238");
+
+        // 等待，消息消费。测试后，可主动关闭。
+        countDownLatch.await();
+    }
 }
