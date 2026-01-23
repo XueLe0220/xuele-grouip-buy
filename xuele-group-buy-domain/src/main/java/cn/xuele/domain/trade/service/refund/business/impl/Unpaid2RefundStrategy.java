@@ -9,7 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * TODO: 类描述
+ * 退单策略：未支付取消
+ * <p>
+ * 场景：用户锁单后未付款，主动取消或超时自动取消。
+ * 动作：修改订单状态 + 释放拼团锁单名额。
  *
  * @author XueLe
  * @version 1.0.0
@@ -24,12 +27,12 @@ public class Unpaid2RefundStrategy implements IRefundStrategy {
 
     @Override
     public void refund(TradeRefundOrderEntity tradeRefundOrderEntity) {
-        log.info("退单；未支付，未成团 userId:{} teamId:{} orderId:{}",
+        log.info("退单策略(未支付取消)开始 userId:{} teamId:{} orderId:{}",
                 tradeRefundOrderEntity.getUserId(),
                 tradeRefundOrderEntity.getTeamId(),
                 tradeRefundOrderEntity.getOrderId());
 
-        //TODO
+        // 执行数据库操作：传入 -1 表示释放 1 个锁单坑位
         repository.unpaid2Refund(GroupBuyRefundAggregate.bulidUnpaid2RefundAggregate(tradeRefundOrderEntity, -1));
     }
 
