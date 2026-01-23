@@ -17,7 +17,6 @@ import cn.xuele.infrastructure.dao.po.SCSkuActivity;
 import cn.xuele.infrastructure.dao.po.Sku;
 import cn.xuele.infrastructure.dcc.DCCService;
 import cn.xuele.types.common.RedisBitMapUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBitSet;
 import org.redisson.api.RedissonClient;
@@ -37,16 +36,25 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 @Slf4j
-@RequiredArgsConstructor
-public class ActivityRepository implements IActivityRepository {
+public class ActivityRepository extends AbstractRepository implements IActivityRepository {
 
     private final IGroupBuyActivityDao groupBuyActivityDao;
     private final IGroupBuyDiscountDao groupBuyDiscountDao;
     private final ISkuDao skuDao;
     private final ISCSkuActivityDao scSkuActivityDao;
     private final ICrowdTagsDetailDao crowdTagsDetailDao;
-    private final DCCService dccService;
-    private final RedissonClient redissonClient;
+
+    public ActivityRepository(RedissonClient redissonClient, DCCService dccService,
+                              IGroupBuyActivityDao groupBuyActivityDao, IGroupBuyDiscountDao groupBuyDiscountDao,
+                              ISkuDao skuDao, ISCSkuActivityDao scSkuActivityDao,
+                              ICrowdTagsDetailDao crowdTagsDetailDao) {
+        super(redissonClient, dccService);
+        this.groupBuyActivityDao = groupBuyActivityDao;
+        this.groupBuyDiscountDao = groupBuyDiscountDao;
+        this.skuDao = skuDao;
+        this.scSkuActivityDao = scSkuActivityDao;
+        this.crowdTagsDetailDao = crowdTagsDetailDao;
+    }
 
 
     @Override
@@ -56,9 +64,9 @@ public class ActivityRepository implements IActivityRepository {
         groupBuyActivityReq.setActivityId(activityId);
 
         // 2. 查询活动主体信息
-        GroupBuyActivity groupBuyActivityRes = groupBuyActivityDao.queryValidGroupBuyActivity(groupBuyActivityReq);
-
-        // [关键防御]：如果当前渠道没有配置活动，直接返回 null，防止后续空指针异常
+        GroupBuyActivity groupBuyActivityRes =
+                getFromCacheOrDB(GroupBuyActivity.cacheRedisKey(activityId),
+                        () -> groupBuyActivityDao.queryValidGroupBuyActivity(groupBuyActivityReq));
         if (null == groupBuyActivityRes) {
             return null;
         }
@@ -66,9 +74,9 @@ public class ActivityRepository implements IActivityRepository {
         // 3. 获取折扣ID并查询关联的折扣配置
         String discountId = groupBuyActivityRes.getDiscountId();
         GroupBuyDiscount groupBuyDiscountRes =
-                groupBuyDiscountDao.queryGroupBuyActivityDiscountByDiscountId(discountId);
+                getFromCacheOrDB(GroupBuyDiscount.cacheRedisKey(discountId),
+                        () -> groupBuyDiscountDao.queryGroupBuyActivityDiscountByDiscountId(discountId));
 
-        // [关键防御]：虽然理论上活动必须有关联折扣，但为了健壮性，若折扣不存在也需处理
         if (null == groupBuyDiscountRes) {
             log.warn("活动存在但未配置有效折扣信息. activityId:{}", groupBuyActivityRes.getActivityId());
             return null;
@@ -156,6 +164,9 @@ public class ActivityRepository implements IActivityRepository {
 
     @Override
     public boolean isUserInTag(String userId) {
+        // TODO: [临时方案] 目前活动表(GroupBuyActivity)里的 tagId 仅作为一个开关标识，并未存储真实的人群标签ID。
+        //  当前逻辑：先去库里查这个用户属于哪个标签，再去 Redis BitMap 校验。
+        //  优化方向：后续活动表应直接存储目标人群的 tagId (如 tag_vip_001)，即可直接由 Redis BitMap 校验，去除 DB 查询
         String tagId = crowdTagsDetailDao.queryTagIdByUserId(userId);
         RBitSet bitSet = redissonClient.getBitSet(RedisBitMapUtils.getTagBitMapKey(tagId));
         return bitSet.get(RedisBitMapUtils.getIndexFromUserId(userId));

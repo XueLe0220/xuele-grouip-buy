@@ -47,6 +47,9 @@ public class DCCService {
     @DCCValue("scBlackList:s02c02")
     private volatile String scBlackList;
 
+    @DCCValue("cacheSwitch:0")
+    private volatile String cacheOpenSwitch;
+
     /**
      * 判断是否触发降级
      *
@@ -93,4 +96,12 @@ public class DCCService {
         List<String> list = Arrays.asList(scBlackList.split(Constants.SPLIT));
         return list.contains(source + channel);
     }
+
+    /**
+     * 缓存开启开关，true为开启，1为关闭
+     */
+    public boolean isCacheOpenSwitch(){
+        return "0".equals(cacheOpenSwitch);
+    }
+
 }

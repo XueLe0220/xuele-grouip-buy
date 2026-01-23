@@ -68,4 +68,8 @@ public class GroupBuyActivity {
     /** 更新时间 */
     private LocalDateTime updateTime;
 
+    public static String cacheRedisKey(Long activityId) {
+        return "group_buy_market_cn.xuele.infrastructure.dao.po.GroupBuyActivity_" + activityId;
+    }
+
 }

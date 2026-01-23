@@ -53,4 +53,7 @@ public class GroupBuyDiscount {
     /** 更新时间 */
     private Date updateTime;
 
+    public static String cacheRedisKey(String discountId) {
+        return "group_buy_market_cn.xuele.infrastructure.dao.po.GroupBuyDiscount_" + discountId;
+    }
 }

@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Supplier;
 
 @Slf4j
 @SpringBootTest
@@ -36,5 +37,26 @@ public class ApiTest {
 
         // 等待，消息消费。测试后，可主动关闭。
         countDownLatch.await();
+    }
+
+    @Test
+    public void test_Supplier(){
+        // 创建一个 Supplier 实例，返回一个字符串
+        Supplier<String> stringSupplier = () -> "Hello, QWQ!";
+
+        // 使用 get() 方法获取 Supplier 提供的值
+        String result = stringSupplier.get();
+
+        // 输出结果
+        System.out.println(result);
+
+        // 另一个示例，使用 Supplier 提供当前时间
+        Supplier<Long> currentTimeSupplier = System::currentTimeMillis;
+
+        // 获取当前时间
+        Long currentTime = currentTimeSupplier.get();
+
+        // 输出当前时间
+        System.out.println("Current time in milliseconds: " + currentTime);
     }
 }

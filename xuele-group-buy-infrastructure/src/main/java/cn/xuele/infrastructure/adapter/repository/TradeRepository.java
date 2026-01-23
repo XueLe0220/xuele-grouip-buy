@@ -42,6 +42,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -408,7 +409,7 @@ public class TradeRepository implements ITradeRepository {
         RBucket<String> bucket = redissonClient.getBucket(lockKey);
 
         // 3. 尝试写入 (Value 写什么不重要，只要不为空即可)
-        boolean lock = bucket.trySet("occupied", validTime + 60, TimeUnit.MINUTES);
+        boolean lock = bucket.setIfAbsent("occupied", Duration.ofMinutes(validTime + 60));
 
         if (!lock) {
             log.info("组队库存疑似重复占用或并发冲突 {}", lockKey);
