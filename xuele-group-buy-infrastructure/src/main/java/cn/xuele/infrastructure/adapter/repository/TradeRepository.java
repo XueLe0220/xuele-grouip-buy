@@ -24,6 +24,7 @@ import cn.xuele.infrastructure.dao.po.GroupBuyOrderList;
 import cn.xuele.infrastructure.dao.po.GroupBuyActivity;
 import cn.xuele.infrastructure.dao.po.NotifyTask;
 import cn.xuele.infrastructure.dcc.DCCService;
+import cn.xuele.types.common.Constants;
 import cn.xuele.types.enums.ActivityStatusEnumVO;
 import cn.xuele.types.enums.GroupBuyTeamOrderVO;
 import cn.xuele.types.enums.ResponseCode;
@@ -33,6 +34,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Repository;
@@ -43,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 交易仓储实现类 (Infrastructure Layer)
@@ -66,6 +71,7 @@ public class TradeRepository implements ITradeRepository {
     private final IGroupBuyOrderListDao groupBuyOrderListDao;
     private final INotifyTaskDao notifyTaskDao;
     private final DCCService dccService;
+    private final RedissonClient redissonClient;
 
     @Value("${spring.rabbitmq.config.producer.topic_team_success.routing_key}")
     private String topic_team_success;
@@ -213,7 +219,7 @@ public class TradeRepository implements ITradeRepository {
                 .discountId(groupBuyActivity.getDiscountId())
                 .groupType(groupBuyActivity.getGroupType())
                 .takeLimitCount(groupBuyActivity.getTakeLimitCount())
-                .target(groupBuyActivity.getTarget())
+                .targetCount(groupBuyActivity.getTarget())
                 .validTime(groupBuyActivity.getValidTime())
                 .status(ActivityStatusEnumVO.valueOf(groupBuyActivity.getStatus()))
                 .startTime(groupBuyActivity.getStartTime())
@@ -273,15 +279,18 @@ public class TradeRepository implements ITradeRepository {
                 log.info("交易结算-拼团成功撞线! teamId:{}", teamReq.getTeamId());
 
                 // 5.1 查询所有团员单号
-                List<String> outTradeNoList = groupBuyOrderListDao.queryGroupBuyCompleteOrderOutTradeNoListByTeamId(teamReq.getTeamId());
+                List<String> outTradeNoList =
+                        groupBuyOrderListDao.queryGroupBuyCompleteOrderOutTradeNoListByTeamId(teamReq.getTeamId());
 
                 // 5.2 写入通知任务
                 NotifyTask notifyTask = new NotifyTask();
                 notifyTask.setActivityId(teamReq.getActivityId());
                 notifyTask.setTeamId(teamReq.getTeamId());
                 notifyTask.setNotifyType(notifyConfigVO.getNotifyType().getCode());
-                notifyTask.setNotifyMQ(NotifyTypeEnumVO.MQ.equals(notifyConfigVO.getNotifyType()) ? notifyConfigVO.getNotifyMQ() : null);
-                notifyTask.setNotifyUrl(NotifyTypeEnumVO.HTTP.equals(notifyConfigVO.getNotifyType()) ? notifyConfigVO.getNotifyUrl() : null);
+                notifyTask.setNotifyMQ(NotifyTypeEnumVO.MQ.equals(notifyConfigVO.getNotifyType()) ?
+                        notifyConfigVO.getNotifyMQ() : null);
+                notifyTask.setNotifyUrl(NotifyTypeEnumVO.HTTP.equals(notifyConfigVO.getNotifyType()) ?
+                        notifyConfigVO.getNotifyUrl() : null);
                 notifyTask.setNotifyCount(0);
                 notifyTask.setNotifyStatus(0);
                 notifyTask.setParameterJson(JSON.toJSONString(new HashMap<String, Object>() {{
@@ -378,5 +387,38 @@ public class TradeRepository implements ITradeRepository {
     @Override
     public int updateNotifyTaskStatusRetry(String teamId) {
         return notifyTaskDao.updateNotifyTaskStatusRetry(teamId);
+    }
+
+    @Override
+    public boolean occupyTeamStock(String teamStockKey, String recoveryTeamStockKey, Integer targetCount,
+                                   Integer validTime) {
+        long recoveryCount = redissonClient.getAtomicLong(recoveryTeamStockKey).get();
+        redissonClient.getAtomicLong(recoveryTeamStockKey).get();
+
+        RAtomicLong teamStock = redissonClient.getAtomicLong(teamStockKey);
+        long occupy = teamStock.incrementAndGet() + 1;
+        if (occupy > targetCount + recoveryCount) {
+            teamStock.set(targetCount);
+            return false;
+        }
+        // 1. 拼装占位 Key (例如: group_buy_stock_1001_5)
+        String lockKey = teamStockKey + Constants.UNDERLINE + occupy;
+
+        // 2. 利用 SETNX 占座
+        RBucket<String> bucket = redissonClient.getBucket(lockKey);
+
+        // 3. 尝试写入 (Value 写什么不重要，只要不为空即可)
+        boolean lock = bucket.trySet("occupied", validTime + 60, TimeUnit.MINUTES);
+
+        if (!lock) {
+            log.info("组队库存疑似重复占用或并发冲突 {}", lockKey);
+        }
+        return lock;
+    }
+
+    @Override
+    public void recoveryTeamStock(String recoveryTeamStockKey, Integer validTime) {
+        if (StringUtils.isBlank(recoveryTeamStockKey)) return;
+        redissonClient.getAtomicLong(recoveryTeamStockKey).incrementAndGet();
     }
 }

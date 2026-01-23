@@ -13,10 +13,7 @@ import java.util.List;
 /**
  * 交易仓储接口
  * <p>
- * DDD 架构定位：
- * 位于领域层 (Domain Layer) 的适配器接口。
- * 作用是将领域对象（Aggregate/Entity）的持久化逻辑与底层的数据库实现解耦。
- * 基础设施层 (Infrastructure) 必须实现此接口。
+ * DDD 架构定位：领域层 (Domain) 接口，负责聚合根/实体的持久化，解耦基础设施层。
  *
  * @author XueLe
  * @version 1.0.0
@@ -25,61 +22,79 @@ import java.util.List;
 public interface ITradeRepository {
 
     /**
-     * 根据外部单号查询未支付的订单
-     * <p>
-     * 业务意图：**幂等性校验 (Idempotency Check)**
-     * 在发起锁单前，先检查该用户针对此交易单号是否已有未完成的订单。
-     * 如果有，直接返回旧订单，避免重复扣减库存。
-     *
-     * @param userId     用户ID
-     * @param outTradeNo 外部交易单号 (唯一键)
-     * @return 存在的订单实体，不存在则返回 null
+     * 根据外部单号查询未支付订单（幂等性校验）
      */
     MarketPayOrderEntity queryNoPayMarketPayOrderByOutTradeNo(String userId, String outTradeNo);
 
     /**
-     * 查询拼团进度
-     * <p>
-     * 业务意图：**快速失败 (Fail-Fast) & 容量检查**
-     * 在尝试去抢占坑位（写操作）之前，先读取当前团的状态。
-     * 如果已满员，直接在 Service 层拦截，减少数据库写锁的竞争。
-     *
-     * @param teamId 拼单组队ID
-     * @return 拼团进度值对象 (包含目标数、已锁数、已完成数)
+     * 查询拼团当前进度（快速失败/容量检查）
      */
     GroupBuyProgressVO queryGroupBuyProgress(String teamId);
 
     /**
-     * 锁单核心方法 (持久化聚合根)
-     * <p>
-     * 业务意图：**事务性落库**
-     * 将组装好的聚合根 (User + Activity + Discount) 保存到数据库。
-     * 内部包含两个原子操作：
-     * 1. 扣减库存/占用坑位 (update group_buy_order)
-     * 2. 生成订单明细 (insert group_buy_order_list)
-     *
-     * @param groupBuyOrderAggregate 拼团订单聚合根
-     * @return 锁单成功后生成的订单实体 (包含生成的 orderId)
+     * 锁单核心方法：持久化聚合根（扣减DB库存 + 生成订单明细）
      */
     MarketPayOrderEntity lockMarketPayOrder(GroupBuyLockOrderAggregate groupBuyOrderAggregate);
 
+    /**
+     * 查询拼团活动配置详情
+     */
     GroupBuyActivityEntity queryGroupBuyActivityByActivityId(Long activityId);
 
+    /**
+     * 统计用户在该活动下的已下单数量（用于限购规则校验）
+     */
     Integer queryOrderCountByActivityIdAndUserId(Long activityId, String userId);
 
+    /**
+     * 执行拼团结算逻辑（生成回调通知任务）
+     */
     NotifyTaskEntity settlement(GroupBuyTeamSettlementAggregate groupBuyTeamSettlementAggregate);
 
+    /**
+     * 渠道(Source)与来源(Channel)的黑名单拦截校验
+     */
     boolean isSCBlackIntercept(String source, String channel);
 
+    /**
+     * 根据ID查询拼团组队详情
+     */
     GroupBuyTeamEntity queryGroupBuyTeamByTeamId(String teamId);
 
+    /**
+     * 扫描全部未执行的拼团结算通知任务
+     */
     List<NotifyTaskEntity> queryUnExecutedNotifyTaskList();
 
+    /**
+     * 查询指定拼团ID下的未执行通知任务
+     */
     List<NotifyTaskEntity> queryUnExecutedNotifyTaskList(String teamId);
 
+    /**
+     * 更新任务状态：执行成功
+     */
     int updateNotifyTaskStatusSuccess(String teamId);
 
+    /**
+     * 更新任务状态：执行失败（不再重试）
+     */
     int updateNotifyTaskStatusError(String teamId);
 
+    /**
+     * 更新任务状态：准备重试（增加重试计数）
+     */
     int updateNotifyTaskStatusRetry(String teamId);
+
+    /**
+     * 缓存层抢占组队库存（Redis原子递增，无锁化设计）
+     * @return true=抢占成功, false=库存不足
+     */
+    boolean occupyTeamStock(String teamStockKey, String recoveryTeamStockKey, Integer targetCount, Integer validTime);
+
+    /**
+     * 缓存库存回补（用于DB锁单失败后的事务补偿）
+     * <p>注意：此方法在你上一段Filter代码中被调用，接口中需补充定义</p>
+     */
+    void recoveryTeamStock(String recoveryTeamStockKey, Integer validTime);
 }

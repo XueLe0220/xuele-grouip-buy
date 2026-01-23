@@ -37,7 +37,7 @@ public class GroupBuyActivityEntity {
     private Integer takeLimitCount;
 
     /** 成团目标人数 */
-    private Integer target;
+    private Integer targetCount;
 
     /** 拼团有效期（分钟） */
     private Integer validTime;

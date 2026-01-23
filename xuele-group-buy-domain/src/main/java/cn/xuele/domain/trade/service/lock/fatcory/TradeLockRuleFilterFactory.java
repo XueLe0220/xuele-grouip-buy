@@ -4,6 +4,7 @@ import cn.xuele.domain.trade.model.entity.GroupBuyActivityEntity;
 import cn.xuele.domain.trade.model.entity.TradeLockRuleCommandEntity;
 import cn.xuele.domain.trade.model.entity.TradeLockRuleFilterBackEntity;
 import cn.xuele.domain.trade.service.lock.filter.ActivityUsabilityRuleFilter;
+import cn.xuele.domain.trade.service.lock.filter.TeamStockOccupyRuleFilter;
 import cn.xuele.domain.trade.service.lock.filter.TradeRuleEndFilter;
 import cn.xuele.domain.trade.service.lock.filter.UserTakeLimitRuleFilter;
 import cn.xuele.types.design.framework.link.LinkArmory;
@@ -12,6 +13,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 /**
@@ -32,12 +34,14 @@ public class TradeLockRuleFilterFactory {
     @Bean("tradeRuleFilter")
     public BusinessLinkedList<TradeLockRuleCommandEntity, DynamicContext, TradeLockRuleFilterBackEntity> tradeRuleFilter(
             ActivityUsabilityRuleFilter activityUsabilityRuleFilter,
-            UserTakeLimitRuleFilter userTakeLimitRuleFilter) {
+            UserTakeLimitRuleFilter userTakeLimitRuleFilter,
+            TeamStockOccupyRuleFilter teamStockOccupyRuleFilter ) {
 
         LinkArmory<TradeLockRuleCommandEntity, DynamicContext, TradeLockRuleFilterBackEntity> linkArmory =
                 new LinkArmory<>("交易规则过滤链",
                         activityUsabilityRuleFilter,
                         userTakeLimitRuleFilter,
+                        teamStockOccupyRuleFilter,
                         new TradeRuleEndFilter());
 
         return linkArmory.getLogicLink();
@@ -52,11 +56,26 @@ public class TradeLockRuleFilterFactory {
     @NoArgsConstructor
     public static class DynamicContext {
 
+        private String recoveryTeamStockKey;
+
+        private String teamStockKey = "group_buy_market_team_stock_key_";
+
         /** 拼团活动实体 */
         private GroupBuyActivityEntity groupBuyActivityEntity;
 
         /** 用户当前已参与次数 */
         private Integer userTakeCount;
+
+
+        public String generateTeamStockKey(String teamId) {
+            if (StringUtils.isBlank(teamId)) return null;
+            return teamStockKey + groupBuyActivityEntity.getActivityId() + "_" + teamId;
+        }
+
+        public String generateRecoveryTeamStockKey(String teamId) {
+            if (StringUtils.isBlank(teamId)) return null;
+            return teamStockKey + groupBuyActivityEntity.getActivityId() + "_" + teamId + "_recovery";
+        }
 
     }
 }

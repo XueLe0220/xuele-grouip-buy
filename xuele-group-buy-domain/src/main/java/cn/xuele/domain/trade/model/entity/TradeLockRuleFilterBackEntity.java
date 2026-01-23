@@ -21,4 +21,8 @@ public class TradeLockRuleFilterBackEntity {
     /** 用户已参与该活动的订单数量（用于限购规则校验） */
     private Integer userTakeOrderCount;
 
+    /** 恢复组队库存缓存key */
+    private String recoveryTeamStockKey;
+
+
 }

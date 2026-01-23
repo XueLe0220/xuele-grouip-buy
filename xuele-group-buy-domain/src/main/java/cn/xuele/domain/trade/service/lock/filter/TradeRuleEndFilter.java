@@ -21,6 +21,7 @@ public class TradeRuleEndFilter implements ILogicHandler<TradeLockRuleCommandEnt
         // 规则链执行完毕，将上下文中计算/获取的结果（如：用户参与次数）封装到返回实体中
         return TradeLockRuleFilterBackEntity.builder()
                 .userTakeOrderCount(dynamicContext.getUserTakeCount())
+                .recoveryTeamStockKey(dynamicContext.getRecoveryTeamStockKey())
                 .build();
     }
 

@@ -75,11 +75,11 @@ public class TradeLockOrderService implements ITradeLockOrderService {
 
         // 2. 调用仓储层进行事务处理
         // 具体的“防超卖”、“新团/旧团判断”、“数据库原子更新”逻辑，全部封装在 Repository 中。
-        // Service 层只需要关注“我要锁单”这个意图。
-        MarketPayOrderEntity marketPayOrderEntity = tradeRepository.lockMarketPayOrder(groupBuyOrderAggregate);
-
-        log.info("拼团锁单-完成 orderId:{}", marketPayOrderEntity.getOrderId());
-
-        return marketPayOrderEntity;
+        try{
+            return tradeRepository.lockMarketPayOrder(groupBuyOrderAggregate);
+        }catch (Exception e){
+            tradeRepository.recoveryTeamStock(tradeRuleFilterBackEntity.getRecoveryTeamStockKey(), payActivityEntity.getValidTime());
+            throw e;
+        }
     }
 }
