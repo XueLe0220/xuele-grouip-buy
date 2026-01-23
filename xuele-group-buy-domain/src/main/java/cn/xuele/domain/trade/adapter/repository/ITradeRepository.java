@@ -1,6 +1,7 @@
 package cn.xuele.domain.trade.adapter.repository;
 
 import cn.xuele.domain.trade.model.aggregate.GroupBuyLockOrderAggregate;
+import cn.xuele.domain.trade.model.aggregate.GroupBuyRefundAggregate;
 import cn.xuele.domain.trade.model.aggregate.GroupBuyTeamSettlementAggregate;
 import cn.xuele.domain.trade.model.entity.GroupBuyActivityEntity;
 import cn.xuele.domain.trade.model.entity.GroupBuyTeamEntity;
@@ -24,7 +25,7 @@ public interface ITradeRepository {
     /**
      * 根据外部单号查询未支付订单（幂等性校验）
      */
-    MarketPayOrderEntity queryNoPayMarketPayOrderByOutTradeNo(String userId, String outTradeNo);
+    MarketPayOrderEntity queryGroupBuyOrderRecordByOutTradeNo(String userId, String outTradeNo);
 
     /**
      * 查询拼团当前进度（快速失败/容量检查）
@@ -97,4 +98,6 @@ public interface ITradeRepository {
      * <p>注意：此方法在你上一段Filter代码中被调用，接口中需补充定义</p>
      */
     void recoveryTeamStock(String recoveryTeamStockKey, Integer validTime);
+
+    void unpaid2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate);
 }

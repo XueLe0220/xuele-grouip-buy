@@ -2,6 +2,7 @@ package cn.xuele.infrastructure.adapter.repository;
 
 import cn.xuele.domain.trade.adapter.repository.ITradeRepository;
 import cn.xuele.domain.trade.model.aggregate.GroupBuyLockOrderAggregate;
+import cn.xuele.domain.trade.model.aggregate.GroupBuyRefundAggregate;
 import cn.xuele.domain.trade.model.aggregate.GroupBuyTeamSettlementAggregate;
 import cn.xuele.domain.trade.model.entity.GroupBuyActivityEntity;
 import cn.xuele.domain.trade.model.entity.GroupBuyTeamEntity;
@@ -10,6 +11,7 @@ import cn.xuele.domain.trade.model.entity.NotifyTaskEntity;
 import cn.xuele.domain.trade.model.entity.PayActivityEntity;
 import cn.xuele.domain.trade.model.entity.PayDiscountEntity;
 import cn.xuele.domain.trade.model.entity.TradePaySettlementEntity;
+import cn.xuele.domain.trade.model.entity.TradeRefundOrderEntity;
 import cn.xuele.domain.trade.model.entity.UserEntity;
 import cn.xuele.domain.trade.model.valobj.GroupBuyProgressVO;
 import cn.xuele.domain.trade.model.valobj.NotifyConfigVO;
@@ -26,7 +28,7 @@ import cn.xuele.infrastructure.dao.po.NotifyTask;
 import cn.xuele.infrastructure.dcc.DCCService;
 import cn.xuele.types.common.Constants;
 import cn.xuele.types.enums.ActivityStatusEnumVO;
-import cn.xuele.types.enums.GroupBuyTeamOrderVO;
+import cn.xuele.types.enums.GroupBuyTeamStatusVO;
 import cn.xuele.types.enums.ResponseCode;
 import cn.xuele.types.exception.AppException;
 import com.alibaba.fastjson2.JSON;
@@ -48,7 +50,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 交易仓储实现类 (Infrastructure Layer)
@@ -78,7 +79,7 @@ public class TradeRepository implements ITradeRepository {
     private String topic_team_success;
 
     @Override
-    public MarketPayOrderEntity queryNoPayMarketPayOrderByOutTradeNo(String userId, String outTradeNo) {
+    public MarketPayOrderEntity queryGroupBuyOrderRecordByOutTradeNo(String userId, String outTradeNo) {
         // 1. 构建查询参数 (PO)
         GroupBuyOrderList groupBuyOrderListReq = GroupBuyOrderList.builder()
                 .userId(userId)
@@ -327,7 +328,7 @@ public class TradeRepository implements ITradeRepository {
                 .targetCount(groupBuyOrder.getTargetCount())
                 .completeCount(groupBuyOrder.getCompleteCount())
                 .lockCount(groupBuyOrder.getLockCount())
-                .status(GroupBuyTeamOrderVO.valueOf(groupBuyOrder.getStatus()))
+                .status(GroupBuyTeamStatusVO.valueOf(groupBuyOrder.getStatus()))
                 .validStartTime(groupBuyOrder.getValidStartTime())
                 .validEndTime(groupBuyOrder.getValidEndTime())
                 .notifyConfigVO(NotifyConfigVO.builder()
@@ -421,5 +422,32 @@ public class TradeRepository implements ITradeRepository {
     public void recoveryTeamStock(String recoveryTeamStockKey, Integer validTime) {
         if (StringUtils.isBlank(recoveryTeamStockKey)) return;
         redissonClient.getAtomicLong(recoveryTeamStockKey).incrementAndGet();
+    }
+
+    @Override
+    @Transactional(timeout = 5000)
+    public void unpaid2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate) {
+        GroupBuyProgressVO groupBuyProgress = groupBuyRefundAggregate.getGroupBuyProgress();
+        TradeRefundOrderEntity tradeRefundOrderEntity = groupBuyRefundAggregate.getTradeRefundOrderEntity();
+
+        // 1. 更新个人单
+        GroupBuyOrderList groupBuyOrderListReq = new GroupBuyOrderList();
+        groupBuyOrderListReq.setUserId(tradeRefundOrderEntity.getUserId());
+        groupBuyOrderListReq.setOrderId(tradeRefundOrderEntity.getOrderId());
+        int orderUpdateCount = groupBuyOrderListDao.unpaid2Refund(groupBuyOrderListReq);
+        if (1 != orderUpdateCount){
+            log.error("逆向流程，更新订单状态(退单)失败 {} {}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOrderId());
+            throw new AppException(ResponseCode.UPDATE_ZERO);
+        }
+
+        // 2. 更新团单
+        GroupBuyOrder groupBuyOrderReq = new GroupBuyOrder();
+        groupBuyOrderReq.setTeamId(tradeRefundOrderEntity.getTeamId());
+        groupBuyOrderReq.setLockCount(groupBuyProgress.getLockCount());
+        int teamUpdateCount = groupBuyOrderDao.unpaid2Refund(groupBuyOrderReq);
+        if (1 != teamUpdateCount) {
+            log.error("逆向流程，更新组队记录(退单)失败 {} {}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOrderId());
+            throw new AppException(ResponseCode.UPDATE_ZERO);
+        }
     }
 }

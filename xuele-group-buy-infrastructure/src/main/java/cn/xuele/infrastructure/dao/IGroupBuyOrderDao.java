@@ -80,4 +80,6 @@ public interface IGroupBuyOrderDao {
      * @return 拼团主表实体 (用于构建聚合根)
      */
     GroupBuyOrder queryGroupBuyTeamByTeamId(@Param("teamId") String teamId);
+
+    int unpaid2Refund(GroupBuyOrder groupBuyOrderReq);
 }

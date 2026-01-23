@@ -33,12 +33,12 @@ public enum TradeOrderStatusEnumVO {
     COMPLETE(1, "消费完成"),
 
     /**
-     * 超时关单 (2)
+     * 用户退单 (2)
      * <p>
-     * 业务含义：在指定时间内（如15分钟）未支付，系统自动关闭订单并释放库存。
+     * 业务含义：用户退单
      * 对应数据库 status = 2
      */
-    CLOSE(2, "超时关单"),
+    CLOSE(2, "用户退单"),
     ;
 
     private final Integer code;

@@ -16,26 +16,10 @@ import lombok.NoArgsConstructor;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public enum GroupBuyTeamOrderVO {
+public enum GroupBuyTeamStatusVO {
 
-    /** * 拼单中
-     * <p>
-     * 含义：团已开启，lockCount < targetCount，尚有名额，允许新用户加入。
-     */
     PROGRESS(0, "拼单中"),
-
-    /** * 拼单完成
-     * <p>
-     * 含义：团已满员 (lockCount >= targetCount) 且所有订单均已支付确认。
-     * 此时不可再加入，流程结束，等待发货。
-     */
     COMPLETE(1, "完成"),
-
-    /** * 拼单失败
-     * <p>
-     * 含义：活动到期仍未达到目标人数，或团长主动取消。
-     * 此时触发退款流程。
-     */
     FAIL(2, "失败"),
     ;
 
@@ -47,7 +31,7 @@ public enum GroupBuyTeamOrderVO {
      * * @param code 数据库存储的状态码
      * @return 对应的枚举对象
      */
-    public static GroupBuyTeamOrderVO valueOf(Integer code) {
+    public static GroupBuyTeamStatusVO valueOf(Integer code) {
         return switch (code) {
             case 0 -> PROGRESS;
             case 1 -> COMPLETE;

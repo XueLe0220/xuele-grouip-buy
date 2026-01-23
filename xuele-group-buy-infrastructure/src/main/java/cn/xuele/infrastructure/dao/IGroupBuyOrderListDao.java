@@ -69,4 +69,6 @@ public interface IGroupBuyOrderListDao {
      * @return 外部单号列表 (out_trade_no list)
      */
     List<String> queryGroupBuyCompleteOrderOutTradeNoListByTeamId(@Param("teamId") String teamId);
+
+    int unpaid2Refund(GroupBuyOrderList groupBuyOrderListReq);
 }

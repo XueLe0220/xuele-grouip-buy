@@ -4,6 +4,7 @@ import cn.xuele.domain.trade.adapter.repository.ITradeRepository;
 import cn.xuele.domain.trade.model.entity.MarketPayOrderEntity;
 import cn.xuele.domain.trade.model.entity.TradeSettlementRuleFilterBackEntity;
 import cn.xuele.domain.trade.model.entity.TradeSettlementRuleCommandEntity;
+import cn.xuele.domain.trade.model.valobj.TradeOrderStatusEnumVO;
 import cn.xuele.domain.trade.service.settlement.factory.TradeSettlementRuleFilterFactory;
 import cn.xuele.types.design.framework.link.handler.ILogicHandler;
 import cn.xuele.types.enums.ResponseCode;
@@ -36,17 +37,15 @@ public class OutTradeNoRuleFilter implements ILogicHandler<TradeSettlementRuleCo
         log.info("结算规则校验-外部单号校验 check start. userId:{} outTradeNo:{}",
                 requestParameter.getUserId(), requestParameter.getOutTradeNo());
 
-        // 2. 查询数据库：根据外部单号查找【未支付】的营销订单
-        MarketPayOrderEntity marketPayOrderEntity = repository.queryNoPayMarketPayOrderByOutTradeNo(
+        // 2. 查询数据库
+        MarketPayOrderEntity marketPayOrderEntity = repository.queryGroupBuyOrderRecordByOutTradeNo(
                 requestParameter.getUserId(),
                 requestParameter.getOutTradeNo()
         );
 
         // 3. 校验逻辑：订单不存在 或 状态不正确
-        if (null == marketPayOrderEntity) {
-            log.warn("结算规则校验-外部单号校验未通过(不存在或已支付). userId:{} outTradeNo:{}",
-                    requestParameter.getUserId(), requestParameter.getOutTradeNo());
-            // 抛出 "订单不存在" 异常
+        if (null == marketPayOrderEntity || TradeOrderStatusEnumVO.CLOSE.equals(marketPayOrderEntity.getTradeOrderStatus())) {
+            log.error("不存在的外部交易单号或用户已退单，不需要做支付订单结算:{} outTradeNo:{}", requestParameter.getUserId(), requestParameter.getOutTradeNo());
             throw new AppException(ResponseCode.E0104);
         }
 

@@ -1,7 +1,7 @@
 package cn.xuele.domain.trade.model.entity;
 
 import cn.xuele.domain.trade.model.valobj.NotifyConfigVO;
-import cn.xuele.types.enums.GroupBuyTeamOrderVO;
+import cn.xuele.types.enums.GroupBuyTeamStatusVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -41,7 +41,7 @@ public class GroupBuyTeamEntity {
     private Integer lockCount;
 
     /** 团状态 (拼单中/完成/失败) */
-    private GroupBuyTeamOrderVO status;
+    private GroupBuyTeamStatusVO status;
 
     /** * 拼团有效开始时间
      * (通常是团长开团的时间)
