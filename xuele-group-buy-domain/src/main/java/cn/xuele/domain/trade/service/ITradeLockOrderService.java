@@ -1,4 +1,4 @@
-package cn.xuele.domain.trade.service.lock;
+package cn.xuele.domain.trade.service;
 
 import cn.xuele.domain.trade.model.entity.MarketPayOrderEntity;
 import cn.xuele.domain.trade.model.entity.PayActivityEntity;

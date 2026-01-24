@@ -278,7 +278,7 @@ CREATE TABLE `notify_task` (
   `activity_id` bigint NOT NULL COMMENT '活动ID',
   `team_id` varchar(8) NOT NULL COMMENT '拼单组队ID',
   `notify_type` varchar(8) NOT NULL DEFAULT 'HTTP' COMMENT '回调类型（HTTP、MQ）',
-  `notify_mq` varchar(32) DEFAULT NULL COMMENT '回调消息',
+  `notify_mq` varchar(32) DEFAULT NULL COMMENT 'MQ 消息路由键 (RoutingKey)',
   `notify_url` varchar(128) DEFAULT NULL COMMENT '回调接口',
   `notify_count` int NOT NULL COMMENT '回调次数',
   `notify_status` tinyint(1) NOT NULL COMMENT '回调状态【0初始、1完成、2重试、3失败】',

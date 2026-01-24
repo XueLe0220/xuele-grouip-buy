@@ -35,7 +35,7 @@ public class NotifyTask {
     /** 回调类型 */
     private String notifyType;
 
-    /** 回调消息 */
+    /** MQ 消息路由键 (RoutingKey) */
     private String notifyMQ;
 
     /** 回调通知地址 (HTTP接口) */

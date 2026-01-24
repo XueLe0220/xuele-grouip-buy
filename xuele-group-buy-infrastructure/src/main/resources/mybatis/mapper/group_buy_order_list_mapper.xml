@@ -45,7 +45,7 @@
     <select id="queryOrderCountByActivityId" parameterType="cn.xuele.infrastructure.dao.po.GroupBuyOrderList"
             resultType="java.lang.Integer">
         select count(id) from group_buy_order_list
-        where user_id = #{userId} and activity_id = #{activityId}
+        where user_id = #{userId} and activity_id = #{activityId} and status in (0,1)
     </select>
 
     <select id="queryGroupBuyCompleteOrderOutTradeNoListByTeamId" resultType="java.lang.String"
@@ -68,6 +68,14 @@
         where user_id = #{userId}
           and order_id = #{orderId}
           and status = 0
+    </update>
+    <update id="paidUnformed2Refund" parameterType="cn.xuele.infrastructure.dao.po.GroupBuyOrderList">
+        update group_buy_order_list
+        set status      = 2,
+            update_time = now()
+        where user_id = #{userId}
+          and order_id = #{orderId}
+          and status = 1
     </update>
 
 </mapper>

@@ -37,7 +37,7 @@ public class GroupBuyRefundAggregate {
      * @param tradeRefundOrderEntity 退单实体
      * @param lockCount              锁单变更数量 (通常为负数，表示释放)
      */
-    public static GroupBuyRefundAggregate bulidUnpaid2RefundAggregate(TradeRefundOrderEntity tradeRefundOrderEntity,
+    public static GroupBuyRefundAggregate buildUnpaid2RefundAggregate(TradeRefundOrderEntity tradeRefundOrderEntity,
                                                                       int lockCount) {
 
         GroupBuyRefundAggregate groupBuyRefundAggregate = new GroupBuyRefundAggregate();
@@ -47,6 +47,21 @@ public class GroupBuyRefundAggregate {
                 GroupBuyProgressVO.builder()
                         .lockCount(lockCount)
                         .build());
+        return groupBuyRefundAggregate;
+
+    }
+
+    public static GroupBuyRefundAggregate buildPaid2RefundAggregate(TradeRefundOrderEntity tradeRefundOrderEntity,
+                                                                   int lockCont,
+                                                                   int CompleteCount) {
+        GroupBuyRefundAggregate groupBuyRefundAggregate = new GroupBuyRefundAggregate();
+        groupBuyRefundAggregate.setTradeRefundOrderEntity(tradeRefundOrderEntity);
+        groupBuyRefundAggregate.setGroupBuyProgress(
+                GroupBuyProgressVO.builder()
+                        .lockCount(lockCont)
+                        .completeCount(CompleteCount)
+                        .build()
+        );
         return groupBuyRefundAggregate;
 
     }

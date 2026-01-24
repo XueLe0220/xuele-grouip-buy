@@ -8,7 +8,6 @@
     </parent>
 
     <artifactId>xuele-group-buy-domain</artifactId>
-
     <packaging>jar</packaging>
 
     <dependencies>
@@ -16,7 +15,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
@@ -26,37 +24,23 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
-
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.auth0</groupId>
-            <artifactId>java-jwt</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
         </dependency>
 
         <dependency>
             <groupId>cn.xuele</groupId>
             <artifactId>xuele-group-buy-types</artifactId>
         </dependency>
+
     </dependencies>
 
     <build>
         <finalName>xuele-group-buy-domain</finalName>
     </build>
-
 </project>

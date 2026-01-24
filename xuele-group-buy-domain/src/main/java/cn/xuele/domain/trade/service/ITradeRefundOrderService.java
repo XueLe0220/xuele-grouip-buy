@@ -1,4 +1,4 @@
-package cn.xuele.domain.trade.service.refund;
+package cn.xuele.domain.trade.service;
 
 import cn.xuele.domain.trade.model.entity.TradeRefundBehaviorEntity;
 import cn.xuele.domain.trade.model.entity.TradeRefundCommandEntity;

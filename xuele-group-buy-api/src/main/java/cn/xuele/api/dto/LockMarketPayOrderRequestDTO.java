@@ -52,7 +52,7 @@ public class LockMarketPayOrderRequestDTO {
          */
         private String notifyType;
         /**
-         * 回调消息
+         * MQ 消息路由键 (RoutingKey)
          */
         private String notifyMQ;
         /**

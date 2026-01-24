@@ -1,4 +1,4 @@
-package cn.xuele.domain.trade.service.settlement;
+package cn.xuele.domain.trade.service;
 
 import cn.xuele.domain.trade.model.entity.NotifyTaskEntity;
 import cn.xuele.domain.trade.model.entity.TradePaySettlementEntity;
@@ -29,18 +29,5 @@ public interface ITradeSettlementOrderService {
     TradeSettlementEntity settlement(TradePaySettlementEntity tradePaySettlementEntity) throws Exception;
 
 
-    /**
-     * 执行结算通知任务
-     */
-    Map<String, Integer> executeSettlementNotifyTask() throws Exception;
 
-    /**
-     * 执行结算通知任务
-     */
-    Map<String, Integer> executeSettlementNotifyTask(String teamId) throws Exception;
-
-    /**
-     * 执行结算通知任务
-     */
-    Map<String, Integer> executeSettlementNotifyTask(NotifyTaskEntity notifyTask) throws Exception;
 }

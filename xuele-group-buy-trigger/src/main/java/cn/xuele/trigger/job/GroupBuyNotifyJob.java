@@ -1,6 +1,7 @@
 package cn.xuele.trigger.job;
 
-import cn.xuele.domain.trade.service.settlement.ITradeSettlementOrderService;
+import cn.xuele.domain.trade.service.ITradeSettlementOrderService;
+import cn.xuele.domain.trade.service.ITradeTaskService;
 import com.alibaba.fastjson.JSON;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class GroupBuyNotifyJob {
 
-    private final ITradeSettlementOrderService tradeSettlementOrderService;
+    private final ITradeTaskService tradeTaskService;
     private final RedissonClient redissonClient;
     private static final String NOTIFY_JOB_EXEC = "group_buy_market_notify_job_exec";
 
@@ -35,7 +36,7 @@ public class GroupBuyNotifyJob {
         try {
             boolean isLocked = lock.tryLock(0, -1 , TimeUnit.SECONDS);
             if(!isLocked) return;
-            Map<String, Integer> result = tradeSettlementOrderService.executeSettlementNotifyTask();
+            Map<String, Integer> result = tradeTaskService.execNotifyJob();
 
             if (result != null && result.getOrDefault("total", 0) > 0) {
                 log.info("【定时任务】拼团回调通知完成 result:{}", JSON.toJSONString(result));

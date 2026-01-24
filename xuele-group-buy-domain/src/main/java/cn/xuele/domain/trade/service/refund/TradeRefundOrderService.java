@@ -8,6 +8,7 @@ import cn.xuele.domain.trade.model.entity.TradeRefundCommandEntity;
 import cn.xuele.domain.trade.model.entity.TradeRefundOrderEntity;
 import cn.xuele.domain.trade.model.valobj.RefundTypeEnumVO;
 import cn.xuele.domain.trade.model.valobj.TradeOrderStatusEnumVO;
+import cn.xuele.domain.trade.service.ITradeRefundOrderService;
 import cn.xuele.domain.trade.service.refund.business.IRefundStrategy;
 import cn.xuele.types.enums.GroupBuyTeamStatusVO;
 import cn.xuele.types.enums.ResponseCode;
@@ -38,7 +39,8 @@ public class TradeRefundOrderService implements ITradeRefundOrderService {
 
     @Override
     public TradeRefundBehaviorEntity refund(TradeRefundCommandEntity tradeRefundCommandEntity) {
-        log.info("逆向流程-开始退单 userId:{} outTradeNo:{}", tradeRefundCommandEntity.getUserId(), tradeRefundCommandEntity.getOutTradeNo());
+        log.info("逆向流程-开始退单 userId:{} outTradeNo:{}", tradeRefundCommandEntity.getUserId(),
+                tradeRefundCommandEntity.getOutTradeNo());
 
         // 1. 查询订单信息
         MarketPayOrderEntity marketPayOrderEntity = repository.queryGroupBuyOrderRecordByOutTradeNo(
@@ -48,7 +50,8 @@ public class TradeRefundOrderService implements ITradeRefundOrderService {
 
         // 2. 基础校验 (防止空指针)
         if (null == marketPayOrderEntity) {
-            log.warn("逆向流程-订单不存在 userId:{} outTradeNo:{}", tradeRefundCommandEntity.getUserId(), tradeRefundCommandEntity.getOutTradeNo());
+            log.warn("逆向流程-订单不存在 userId:{} outTradeNo:{}", tradeRefundCommandEntity.getUserId(),
+                    tradeRefundCommandEntity.getOutTradeNo());
             throw new AppException(ResponseCode.E0002.getCode(), "订单不存在");
         }
 
@@ -79,6 +82,7 @@ public class TradeRefundOrderService implements ITradeRefundOrderService {
                 .userId(tradeRefundCommandEntity.getUserId())
                 .orderId(orderId)
                 .teamId(teamId)
+                .activityId(groupBuyTeamEntity.getActivityId())
                 .build());
 
         // 6. 返回成功结果

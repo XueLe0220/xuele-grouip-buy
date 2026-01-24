@@ -8,7 +8,7 @@ import cn.xuele.domain.trade.model.entity.MarketPayOrderEntity;
 import cn.xuele.domain.trade.model.entity.PayActivityEntity;
 import cn.xuele.domain.trade.model.entity.PayDiscountEntity;
 import cn.xuele.domain.trade.model.entity.UserEntity;
-import cn.xuele.domain.trade.service.lock.ITradeLockOrderService;
+import cn.xuele.domain.trade.service.ITradeLockOrderService;
 import com.alibaba.fastjson.JSON;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;

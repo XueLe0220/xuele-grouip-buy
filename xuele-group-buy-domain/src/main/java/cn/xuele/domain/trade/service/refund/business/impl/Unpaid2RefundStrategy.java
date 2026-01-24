@@ -33,7 +33,7 @@ public class Unpaid2RefundStrategy implements IRefundStrategy {
                 tradeRefundOrderEntity.getOrderId());
 
         // 执行数据库操作：传入 -1 表示释放 1 个锁单坑位
-        repository.unpaid2Refund(GroupBuyRefundAggregate.bulidUnpaid2RefundAggregate(tradeRefundOrderEntity, -1));
+        repository.unpaid2Refund(GroupBuyRefundAggregate.buildUnpaid2RefundAggregate(tradeRefundOrderEntity, -1));
     }
 
 }

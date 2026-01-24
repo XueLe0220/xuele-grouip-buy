@@ -58,6 +58,9 @@ spring:
           routing_key: topic.team_success
           # 消费队列
           queue: group_buy_market_queue_2_topic_team_success
+        topic_refund:
+          routing_key: topic.refund
+          queue: group_buy_market_queue_2_topic_refund
 
 # ===================================================================
 # Mybatis 配置

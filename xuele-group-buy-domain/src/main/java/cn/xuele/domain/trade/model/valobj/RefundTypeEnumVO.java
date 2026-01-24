@@ -18,14 +18,14 @@ import java.util.Arrays;
 @NoArgsConstructor
 @Getter
 public enum RefundTypeEnumVO {
-    UNPAID_UNLOCK("unpaid_unlock", "unpaid2RefundStrategy", "未支付，未成团") {
+    UNPAID_UNLOCK("unpaid_unlock", "paidFormed2RefundStrategy", "未支付，未成团") {
         @Override
         public boolean matches(GroupBuyTeamStatusVO groupBuyTeamStatusVO, TradeOrderStatusEnumVO tradeOrderStatusEnumVO) {
             return GroupBuyTeamStatusVO.PROGRESS.equals(groupBuyTeamStatusVO) && TradeOrderStatusEnumVO.CREATE.equals(tradeOrderStatusEnumVO);
         }
     },
 
-    PAID_UNFORMED("paid_unformed", "paid2RefundStrategy", "已支付，未成团") {
+    PAID_UNFORMED("paid_unformed", "paidUnformed2RefundStrategy", "已支付，未成团") {
         @Override
         public boolean matches(GroupBuyTeamStatusVO groupBuyTeamStatusVO, TradeOrderStatusEnumVO tradeOrderStatusEnumVO) {
             return GroupBuyTeamStatusVO.PROGRESS.equals(groupBuyTeamStatusVO) && TradeOrderStatusEnumVO.COMPLETE.equals(tradeOrderStatusEnumVO);

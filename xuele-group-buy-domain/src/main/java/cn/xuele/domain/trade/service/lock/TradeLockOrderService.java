@@ -9,6 +9,7 @@ import cn.xuele.domain.trade.model.entity.TradeLockRuleCommandEntity;
 import cn.xuele.domain.trade.model.entity.TradeLockRuleFilterBackEntity;
 import cn.xuele.domain.trade.model.entity.UserEntity;
 import cn.xuele.domain.trade.model.valobj.GroupBuyProgressVO;
+import cn.xuele.domain.trade.service.ITradeLockOrderService;
 import cn.xuele.domain.trade.service.lock.fatcory.TradeLockRuleFilterFactory;
 import cn.xuele.types.design.framework.link.chain.BusinessLinkedList;
 import lombok.RequiredArgsConstructor;

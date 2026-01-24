@@ -71,4 +71,6 @@ public interface IGroupBuyOrderListDao {
     List<String> queryGroupBuyCompleteOrderOutTradeNoListByTeamId(@Param("teamId") String teamId);
 
     int unpaid2Refund(GroupBuyOrderList groupBuyOrderListReq);
+
+    int paidUnformed2Refund(GroupBuyOrderList groupBuyOrderListReq);
 }

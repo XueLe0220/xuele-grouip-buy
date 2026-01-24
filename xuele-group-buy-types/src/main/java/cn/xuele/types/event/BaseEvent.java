@@ -1,6 +1,5 @@
 package cn.xuele.types.event;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -52,10 +51,6 @@ public abstract class BaseEvent<T> {
          */
         private String id;
 
-        /**
-         * 消息生成时间戳
-         */
-        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
         private LocalDateTime timeStamp;
 
         /**

@@ -1,4 +1,4 @@
-package cn.xuele.config;
+package cn.xuele.infrastructure.config;
 
 import cn.xuele.types.annotation.DCCValue;
 import cn.xuele.types.common.Constants;

@@ -1,4 +1,4 @@
-package cn.xuele.config;
+package cn.xuele.infrastructure.config;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;

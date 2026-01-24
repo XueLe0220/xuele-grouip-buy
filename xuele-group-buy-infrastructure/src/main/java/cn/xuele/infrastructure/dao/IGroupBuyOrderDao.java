@@ -1,6 +1,5 @@
 package cn.xuele.infrastructure.dao;
 
-import cn.xuele.domain.trade.model.entity.GroupBuyTeamEntity;
 import cn.xuele.infrastructure.dao.po.GroupBuyOrder;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -82,4 +81,6 @@ public interface IGroupBuyOrderDao {
     GroupBuyOrder queryGroupBuyTeamByTeamId(@Param("teamId") String teamId);
 
     int unpaid2Refund(GroupBuyOrder groupBuyOrderReq);
+
+    int paidUnformed2Refund(GroupBuyOrder groupBuyOrderReq);
 }

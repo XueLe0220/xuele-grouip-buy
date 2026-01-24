@@ -1,4 +1,4 @@
-package cn.xuele.config;
+package cn.xuele.infrastructure.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

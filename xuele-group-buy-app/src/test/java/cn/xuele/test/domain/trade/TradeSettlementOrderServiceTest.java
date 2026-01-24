@@ -2,7 +2,7 @@ package cn.xuele.test.domain.trade;
 
 import cn.xuele.domain.trade.model.entity.TradePaySettlementEntity;
 import cn.xuele.domain.trade.model.entity.TradeSettlementEntity;
-import cn.xuele.domain.trade.service.settlement.ITradeSettlementOrderService;
+import cn.xuele.domain.trade.service.ITradeSettlementOrderService;
 import com.alibaba.fastjson2.JSON;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -30,8 +30,8 @@ public class TradeSettlementOrderServiceTest {
         TradePaySettlementEntity tradePaySettlementEntity = new TradePaySettlementEntity();
         tradePaySettlementEntity.setSource("s01");
         tradePaySettlementEntity.setChannel("c01");
-        tradePaySettlementEntity.setUserId("xuele");
-        tradePaySettlementEntity.setOutTradeNo("025530705810");
+        tradePaySettlementEntity.setUserId("bangzhi");
+        tradePaySettlementEntity.setOutTradeNo("971697405275");
         tradePaySettlementEntity.setOutTradeTime(LocalDateTime.now());
         TradeSettlementEntity tradeSettlementEntity = tradeSettlementOrderService.settlement(tradePaySettlementEntity);
         log.info("请求参数:{}", JSON.toJSONString(tradePaySettlementEntity));

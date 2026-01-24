@@ -100,4 +100,6 @@ public interface ITradeRepository {
     void recoveryTeamStock(String recoveryTeamStockKey, Integer validTime);
 
     void unpaid2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate);
+
+    NotifyTaskEntity paidUnformed2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate);
 }

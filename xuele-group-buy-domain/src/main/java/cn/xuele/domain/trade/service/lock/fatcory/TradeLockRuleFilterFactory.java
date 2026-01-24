@@ -58,6 +58,7 @@ public class TradeLockRuleFilterFactory {
 
         private String recoveryTeamStockKey;
 
+        @Builder.Default
         private String teamStockKey = "group_buy_market_team_stock_key_";
 
         /** 拼团活动实体 */
