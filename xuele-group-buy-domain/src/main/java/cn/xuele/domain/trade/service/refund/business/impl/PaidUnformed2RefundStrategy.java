@@ -40,7 +40,7 @@ public class PaidUnformed2RefundStrategy implements IRefundStrategy {
         // 1. [核心] 交易退单 + 保存任务单 (原子操作)
         // 这一步必须保证：订单状态变更 和 NotifyTask 落库 在同一个事务中完成
         NotifyTaskEntity notifyTask = repository.paidUnformed2Refund(
-                GroupBuyRefundAggregate.buildPaid2RefundAggregate(tradeRefundOrderEntity, -1, -1)
+                GroupBuyRefundAggregate.buildPaidUnformed2RefundAggregate(tradeRefundOrderEntity, -1, -1)
         );
 
         if (null == notifyTask) {
@@ -54,10 +54,10 @@ public class PaidUnformed2RefundStrategy implements IRefundStrategy {
             try {
                 // 执行通知任务（发送 MQ）
                 Map<String, Integer> notifyResultMap = tradeTaskService.execNotifyJob(notifyTask);
-                log.info("逆向流程-异步通知发送成功 userId:{} result:{}", tradeRefundOrderEntity.getUserId(),
+                log.info("回调通知交易退单（已支付、未成团）-异步通知发送成功 userId:{} result:{}", tradeRefundOrderEntity.getUserId(),
                         JSON.toJSONString(notifyResultMap));
             } catch (Exception e) {
-                log.error("逆向流程-异步通知发送失败(等待定时任务补偿) userId:{} orderId:{}",
+                log.error("回调通知交易退单（已支付、未成团）-异步通知发送失败(等待定时任务补偿) userId:{} orderId:{}",
                         tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOrderId(), e);
             }
         });

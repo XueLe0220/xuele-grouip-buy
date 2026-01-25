@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourcePerFileMappings">
-    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/1ad6bfa9-2fc9-4627-ba37-8bc1a7c42b1f/console.sql" value="1ad6bfa9-2fc9-4627-ba37-8bc1a7c42b1f" />
-    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/1ad6bfa9-2fc9-4627-ba37-8bc1a7c42b1f/console_1.sql" value="1ad6bfa9-2fc9-4627-ba37-8bc1a7c42b1f" />
-    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/1ad6bfa9-2fc9-4627-ba37-8bc1a7c42b1f/console_2.sql" value="1ad6bfa9-2fc9-4627-ba37-8bc1a7c42b1f" />
+    <file url="file://$PROJECT_DIR$/docs/dev-ops/mysql/sql/2-28-group_buy_market.sql" value="1ad6bfa9-2fc9-4627-ba37-8bc1a7c42b1f" />
   </component>
 </project>

@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * 交易结算通知任务聚合根/实体
+ * 交易结算通知任务实体
  * <p>
  * 对应表：notify_task
  *
@@ -53,6 +53,11 @@ public class NotifyTaskEntity implements Serializable {
      * 参数对象
      */
     private String parameterJson;
+
+    /**
+     * 唯一标识
+     */
+    private String uuid;
 
 
     public boolean hasRetryChance(){

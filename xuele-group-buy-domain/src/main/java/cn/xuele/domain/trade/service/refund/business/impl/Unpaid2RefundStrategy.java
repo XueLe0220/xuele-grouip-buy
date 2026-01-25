@@ -2,11 +2,18 @@ package cn.xuele.domain.trade.service.refund.business.impl;
 
 import cn.xuele.domain.trade.adapter.repository.ITradeRepository;
 import cn.xuele.domain.trade.model.aggregate.GroupBuyRefundAggregate;
+import cn.xuele.domain.trade.model.entity.NotifyTaskEntity;
 import cn.xuele.domain.trade.model.entity.TradeRefundOrderEntity;
+import cn.xuele.domain.trade.service.ITradeTaskService;
 import cn.xuele.domain.trade.service.refund.business.IRefundStrategy;
+import cn.xuele.types.exception.AppException;
+import com.alibaba.fastjson.JSON;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 退单策略：未支付取消
@@ -25,15 +32,29 @@ public class Unpaid2RefundStrategy implements IRefundStrategy {
 
     private final ITradeRepository repository;
 
+    private final ITradeTaskService tradeTaskService;
+
+    private final ThreadPoolExecutor threadPoolExecutor;
+
     @Override
     public void refund(TradeRefundOrderEntity tradeRefundOrderEntity) {
-        log.info("退单策略(未支付取消)开始 userId:{} teamId:{} orderId:{}",
-                tradeRefundOrderEntity.getUserId(),
-                tradeRefundOrderEntity.getTeamId(),
-                tradeRefundOrderEntity.getOrderId());
+        log.info("退单；未支付，未成团 userId:{} teamId:{} orderId:{}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getTeamId(), tradeRefundOrderEntity.getOrderId());
+        // 1. 退单；未支付，未成团
+        NotifyTaskEntity notifyTaskEntity = repository.unpaid2Refund(GroupBuyRefundAggregate.buildUnpaid2RefundAggregate(tradeRefundOrderEntity, -1));
 
-        // 执行数据库操作：传入 -1 表示释放 1 个锁单坑位
-        repository.unpaid2Refund(GroupBuyRefundAggregate.buildUnpaid2RefundAggregate(tradeRefundOrderEntity, -1));
+        // 2. 发送MQ消息 - 发送MQ，恢复锁单库存量使用
+        if (null != notifyTaskEntity) {
+            threadPoolExecutor.execute(() -> {
+                Map<String, Integer> notifyResultMap = null;
+                try {
+                    notifyResultMap = tradeTaskService.execNotifyJob(notifyTaskEntity);
+                    log.info("回调通知交易退单(未支付，未成团) result:{}", JSON.toJSONString(notifyResultMap));
+                } catch (Exception e) {
+                    log.error("回调通知交易退单失败(未支付，未成团) result:{}", JSON.toJSONString(notifyResultMap), e);
+                    throw new AppException(e.getMessage());
+                }
+            });
+        }
     }
 
 }

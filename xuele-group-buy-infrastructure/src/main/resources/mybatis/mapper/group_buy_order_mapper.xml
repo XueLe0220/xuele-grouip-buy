@@ -72,6 +72,17 @@
         where team_id = #{teamId}
           and status = 0
     </update>
+    <update id="paidFormed2Refund" parameterType="cn.xuele.infrastructure.dao.po.GroupBuyOrder">
+        update group_buy_order
+        set lock_count     = lock_count + #{lockCount},
+            complete_count = complete_count + #{completeCount},
+            update_time    = now(),
+
+            status         = IF((complete_count + #{completeCount}) = 0, 2, #{status})
+
+        where team_id = #{teamId}
+          and status in (1, 3)
+    </update>
 
     <select id="queryGroupBuyProgress" parameterType="java.lang.String" resultMap="dataMap">
         select target_count, complete_count, lock_count

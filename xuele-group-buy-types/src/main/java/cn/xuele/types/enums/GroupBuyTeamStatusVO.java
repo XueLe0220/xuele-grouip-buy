@@ -21,6 +21,7 @@ public enum GroupBuyTeamStatusVO {
     PROGRESS(0, "拼单中"),
     COMPLETE(1, "完成"),
     FAIL(2, "失败"),
+    COMPLETE_FAIL(3, "成功-含退单"),
     ;
 
     private Integer code;
@@ -36,6 +37,7 @@ public enum GroupBuyTeamStatusVO {
             case 0 -> PROGRESS;
             case 1 -> COMPLETE;
             case 2 -> FAIL;
+            case 3 -> COMPLETE_FAIL;
             default -> throw new RuntimeException("Err: GroupBuy status code [" + code + "] not exist!");
         };
     }

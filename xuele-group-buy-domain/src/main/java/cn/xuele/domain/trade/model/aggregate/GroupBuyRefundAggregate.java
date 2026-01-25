@@ -2,6 +2,7 @@ package cn.xuele.domain.trade.model.aggregate;
 
 import cn.xuele.domain.trade.model.entity.TradeRefundOrderEntity;
 import cn.xuele.domain.trade.model.valobj.GroupBuyProgressVO;
+import cn.xuele.types.enums.GroupBuyTeamStatusVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,6 +32,8 @@ public class GroupBuyRefundAggregate {
      */
     private GroupBuyProgressVO groupBuyProgress;
 
+    private GroupBuyTeamStatusVO groupBuyTeamStatusVO;
+
     /**
      * 静态工厂：构建【未支付取消】场景的聚合对象
      *
@@ -51,18 +54,29 @@ public class GroupBuyRefundAggregate {
 
     }
 
-    public static GroupBuyRefundAggregate buildPaid2RefundAggregate(TradeRefundOrderEntity tradeRefundOrderEntity,
-                                                                   int lockCont,
-                                                                   int CompleteCount) {
+    public static GroupBuyRefundAggregate buildPaidUnformed2RefundAggregate(TradeRefundOrderEntity tradeRefundOrderEntity,
+                                                                            int lockCont,
+                                                                            int completeCount) {
         GroupBuyRefundAggregate groupBuyRefundAggregate = new GroupBuyRefundAggregate();
         groupBuyRefundAggregate.setTradeRefundOrderEntity(tradeRefundOrderEntity);
         groupBuyRefundAggregate.setGroupBuyProgress(
                 GroupBuyProgressVO.builder()
                         .lockCount(lockCont)
-                        .completeCount(CompleteCount)
+                        .completeCount(completeCount)
                         .build()
         );
         return groupBuyRefundAggregate;
 
     }
+
+    public static GroupBuyRefundAggregate buildPaidFormed2RefundAggregate(TradeRefundOrderEntity tradeRefundOrderEntity,
+                                                                          int lockCount,
+                                                                          int completeCount,
+                                                                          GroupBuyTeamStatusVO status) {
+        GroupBuyRefundAggregate groupBuyRefundAggregate = buildPaidUnformed2RefundAggregate(tradeRefundOrderEntity,
+                lockCount, completeCount);
+        groupBuyRefundAggregate.setGroupBuyTeamStatusVO(status);
+        return groupBuyRefundAggregate;
+    }
+
 }

@@ -31,8 +31,8 @@ public class TradeRefundOrderServiceTest {
     @Test
     public void test_refundOrder() throws InterruptedException {
         TradeRefundCommandEntity tradeRefundCommandEntity = TradeRefundCommandEntity.builder()
-                .userId("bangzhi")
-                .outTradeNo("971697405275")
+                .userId("keke")
+                .outTradeNo("736394529649")
                 .source("s01")
                 .channel("c01")
                 .build();

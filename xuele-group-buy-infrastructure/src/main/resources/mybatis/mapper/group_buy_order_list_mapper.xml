@@ -77,5 +77,13 @@
           and order_id = #{orderId}
           and status = 1
     </update>
+    <update id="paidFormed2Refund" parameterType="cn.xuele.infrastructure.dao.po.GroupBuyOrderList">
+        update group_buy_order_list
+        set status = 2,
+            update_time = now()
+        where user_id = #{userId}
+          and order_id = #{orderId}
+          and status = 1
+    </update>
 
 </mapper>

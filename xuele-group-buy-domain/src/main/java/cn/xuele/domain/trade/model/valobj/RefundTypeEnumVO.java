@@ -18,7 +18,7 @@ import java.util.Arrays;
 @NoArgsConstructor
 @Getter
 public enum RefundTypeEnumVO {
-    UNPAID_UNLOCK("unpaid_unlock", "paidFormed2RefundStrategy", "未支付，未成团") {
+    UNPAID_UNLOCK("unpaid_unlock", "unpaid2RefundStrategy", "未支付，未成团") {
         @Override
         public boolean matches(GroupBuyTeamStatusVO groupBuyTeamStatusVO, TradeOrderStatusEnumVO tradeOrderStatusEnumVO) {
             return GroupBuyTeamStatusVO.PROGRESS.equals(groupBuyTeamStatusVO) && TradeOrderStatusEnumVO.CREATE.equals(tradeOrderStatusEnumVO);
@@ -32,11 +32,13 @@ public enum RefundTypeEnumVO {
         }
     },
 
-    PAID_FORMED("paid_formed", "paidTeam2RefundStrategy", "已支付，已成团"){
+    PAID_FORMED("paid_formed", "paidFormed2RefundStrategy", "已支付，已成团"){
 
         @Override
         public boolean matches(GroupBuyTeamStatusVO groupBuyTeamStatusVO, TradeOrderStatusEnumVO tradeOrderStatusEnumVO) {
-            return GroupBuyTeamStatusVO.COMPLETE.equals(groupBuyTeamStatusVO) && TradeOrderStatusEnumVO.COMPLETE.equals(tradeOrderStatusEnumVO);
+            // 完成、完成含退单，都做此处理
+            return (GroupBuyTeamStatusVO.COMPLETE.equals(groupBuyTeamStatusVO) || GroupBuyTeamStatusVO.COMPLETE_FAIL.equals(groupBuyTeamStatusVO))
+                    && TradeOrderStatusEnumVO.COMPLETE.equals(tradeOrderStatusEnumVO);
         }
     }
 

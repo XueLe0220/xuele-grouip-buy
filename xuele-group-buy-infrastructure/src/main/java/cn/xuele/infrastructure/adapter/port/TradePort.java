@@ -43,7 +43,7 @@ public class TradePort implements ITradePort {
     @Override
     public String groupBuyNotify(NotifyTaskEntity notifyTask) {
         // 1. 获取分布式锁实例 (锁粒度：TeamId)
-        RLock lock = redissonClient.getLock(NOTIFY_TASK_JOB_KEY + notifyTask.getTeamId());
+        RLock lock = redissonClient.getLock(NOTIFY_TASK_JOB_KEY + notifyTask.getUuid());
 
         try {
             // 2. 尝试抢占锁 (非阻塞模式 Fail-fast)

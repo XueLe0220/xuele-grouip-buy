@@ -17,6 +17,7 @@ import cn.xuele.domain.trade.model.valobj.GroupBuyProgressVO;
 import cn.xuele.domain.trade.model.valobj.NotifyConfigVO;
 import cn.xuele.domain.trade.model.valobj.NotifyTypeEnumVO;
 import cn.xuele.domain.trade.model.valobj.RefundTypeEnumVO;
+import cn.xuele.domain.trade.model.valobj.TaskNotifyCategoryEnumVO;
 import cn.xuele.domain.trade.model.valobj.TradeOrderStatusEnumVO;
 import cn.xuele.infrastructure.config.RabbitMQProperties;
 import cn.xuele.infrastructure.dao.IGroupBuyActivityDao;
@@ -287,6 +288,7 @@ public class TradeRepository implements ITradeRepository {
                 NotifyTask notifyTask = new NotifyTask();
                 notifyTask.setActivityId(teamReq.getActivityId());
                 notifyTask.setTeamId(teamReq.getTeamId());
+                notifyTask.setNotifyCategory(TaskNotifyCategoryEnumVO.TRADE_SETTLEMENT.getInfo());
                 notifyTask.setNotifyType(notifyConfigVO.getNotifyType().getCode());
                 notifyTask.setNotifyMQ(NotifyTypeEnumVO.MQ.equals(notifyConfigVO.getNotifyType()) ?
                         notifyConfigVO.getNotifyMQ() : null);
@@ -298,6 +300,7 @@ public class TradeRepository implements ITradeRepository {
                     put("teamId", teamReq.getTeamId());
                     put("outTradeNoList", outTradeNoList);
                 }}));
+                notifyTask.setUuid(teamReq.getTeamId() + Constants.UNDERLINE + TaskNotifyCategoryEnumVO.TRADE_SETTLEMENT.getCode() + Constants.UNDERLINE + payReq.getOutTradeNo());
 
                 notifyTaskDao.insert(notifyTask);
                 return NotifyTaskEntity.builder()
@@ -307,6 +310,7 @@ public class TradeRepository implements ITradeRepository {
                         .notifyUrl(notifyTask.getNotifyUrl())
                         .notifyCount(notifyTask.getNotifyCount())
                         .parameterJson(notifyTask.getParameterJson())
+                        .uuid(notifyTask.getUuid())
                         .build();
             }
         }
@@ -425,7 +429,7 @@ public class TradeRepository implements ITradeRepository {
 
     @Override
     @Transactional(timeout = 5000)
-    public void unpaid2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate) {
+    public NotifyTaskEntity unpaid2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate) {
         GroupBuyProgressVO groupBuyProgress = groupBuyRefundAggregate.getGroupBuyProgress();
         TradeRefundOrderEntity tradeRefundOrderEntity = groupBuyRefundAggregate.getTradeRefundOrderEntity();
 
@@ -450,6 +454,36 @@ public class TradeRepository implements ITradeRepository {
                     tradeRefundOrderEntity.getOrderId());
             throw new AppException(ResponseCode.UPDATE_ZERO);
         }
+
+        // 本地消息任务表
+        NotifyTask notifyTask = new NotifyTask();
+        notifyTask.setActivityId(tradeRefundOrderEntity.getActivityId());
+        notifyTask.setTeamId(tradeRefundOrderEntity.getTeamId());
+        notifyTask.setNotifyCategory(TaskNotifyCategoryEnumVO.TRADE_UNPAID2REFUND.getCode());
+        notifyTask.setNotifyType(NotifyTypeEnumVO.MQ.getCode());
+        notifyTask.setNotifyMQ(rabbitMQProperties.getTopicRefund().getRoutingKey());
+        notifyTask.setNotifyCount(0);
+        notifyTask.setNotifyStatus(0);
+        notifyTask.setUuid(tradeRefundOrderEntity.getTeamId() + Constants.UNDERLINE + TaskNotifyCategoryEnumVO.TRADE_UNPAID2REFUND.getCode() + Constants.UNDERLINE + tradeRefundOrderEntity.getOrderId());
+
+        notifyTask.setParameterJson(JSON.toJSONString(new HashMap<String, Object>() {{
+            put("type", RefundTypeEnumVO.PAID_FORMED.getCode());
+            put("userId", tradeRefundOrderEntity.getUserId());
+            put("teamId", tradeRefundOrderEntity.getTeamId());
+            put("orderId", tradeRefundOrderEntity.getOrderId());
+            put("activityId", tradeRefundOrderEntity.getActivityId());
+        }}));
+
+        notifyTaskDao.insert(notifyTask);
+
+        return NotifyTaskEntity.builder()
+                .teamId(notifyTask.getTeamId())
+                .notifyType(notifyTask.getNotifyType())
+                .notifyMQ(notifyTask.getNotifyMQ())
+                .notifyCount(notifyTask.getNotifyCount())
+                .parameterJson(notifyTask.getParameterJson())
+                .uuid(notifyTask.getUuid())
+                .build();
     }
 
     @Override
@@ -467,10 +501,10 @@ public class TradeRepository implements ITradeRepository {
         groupBuyOrderListReq.setUserId(userId);
         int updatePaid2RefundCount = groupBuyOrderListDao.paidUnformed2Refund(groupBuyOrderListReq);
         if (1 != updatePaid2RefundCount) {
-            log.error("逆向流程-paid2Refund，更新订单状态(退单)失败 {} {}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOrderId());
+            log.error("逆向流程-paidUnformed2Refund，更新订单状态(退单)失败 {} {}", tradeRefundOrderEntity.getUserId(),
+                    tradeRefundOrderEntity.getOrderId());
             throw new AppException(ResponseCode.UPDATE_ZERO);
         }
-
 
 
         // 2. 更新团单
@@ -484,7 +518,8 @@ public class TradeRepository implements ITradeRepository {
         groupBuyOrderReq.setTeamId(teamId);
         int updateTeamPaid2Refund = groupBuyOrderDao.paidUnformed2Refund(groupBuyOrderReq);
         if (1 != updateTeamPaid2Refund) {
-            log.error("逆向流程-paid2Refund，更新组队记录(退单)失败 {} {}", tradeRefundOrderEntity.getUserId(), tradeRefundOrderEntity.getOrderId());
+            log.error("逆向流程-paidUnformed2Refund，更新组队记录(退单)失败 {} {}", tradeRefundOrderEntity.getUserId(),
+                    tradeRefundOrderEntity.getOrderId());
             throw new AppException(ResponseCode.UPDATE_ZERO);
         }
 
@@ -493,10 +528,12 @@ public class TradeRepository implements ITradeRepository {
         NotifyTask notifyTask = new NotifyTask();
         notifyTask.setActivityId(tradeRefundOrderEntity.getActivityId());
         notifyTask.setTeamId(tradeRefundOrderEntity.getTeamId());
+        notifyTask.setNotifyCategory(TaskNotifyCategoryEnumVO.TRADE_PAID_UNFORMED2REFUND.getInfo());
         notifyTask.setNotifyType(NotifyTypeEnumVO.MQ.getCode());
         notifyTask.setNotifyMQ(rabbitMQProperties.getTopicRefund().getRoutingKey());
         notifyTask.setNotifyCount(0);
         notifyTask.setNotifyStatus(0);
+        notifyTask.setUuid(tradeRefundOrderEntity.getTeamId() + Constants.UNDERLINE + TaskNotifyCategoryEnumVO.TRADE_PAID_UNFORMED2REFUND.getCode() + Constants.UNDERLINE + tradeRefundOrderEntity.getOrderId());
 
         notifyTask.setParameterJson(JSON.toJSONString(new HashMap<String, Object>() {{
             put("type", RefundTypeEnumVO.PAID_UNFORMED.getCode());
@@ -505,6 +542,74 @@ public class TradeRepository implements ITradeRepository {
             put("orderId", tradeRefundOrderEntity.getOrderId());
             put("activityId", tradeRefundOrderEntity.getActivityId());
         }}));
+        notifyTaskDao.insert(notifyTask);
+
+        return NotifyTaskEntity.builder()
+                .teamId(notifyTask.getTeamId())
+                .notifyType(notifyTask.getNotifyType())
+                .notifyMQ(notifyTask.getNotifyMQ())
+                .notifyCount(notifyTask.getNotifyCount())
+                .parameterJson(notifyTask.getParameterJson())
+                .uuid(notifyTask.getUuid())
+                .build();
+    }
+
+    @Override
+    public NotifyTaskEntity paidFormed2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate) {
+
+        TradeRefundOrderEntity tradeRefundOrderEntity = groupBuyRefundAggregate.getTradeRefundOrderEntity();
+        String teamId = tradeRefundOrderEntity.getTeamId();
+        String userId = tradeRefundOrderEntity.getUserId();
+        String orderId = tradeRefundOrderEntity.getOrderId();
+
+
+        // 1. 更新个人单
+        GroupBuyOrderList groupBuyOrderListReq = new GroupBuyOrderList();
+        groupBuyOrderListReq.setOrderId(orderId);
+        groupBuyOrderListReq.setUserId(userId);
+        int updatePaidFormedOrder = groupBuyOrderListDao.paidFormed2Refund(groupBuyOrderListReq);
+        if (1 != updatePaidFormedOrder) {
+            log.error("逆向流程-paidFormed2Refund，更新订单状态(退单-已支付已成团)失败 {} {}", tradeRefundOrderEntity.getUserId(),
+                    tradeRefundOrderEntity.getOrderId());
+            throw new AppException(ResponseCode.UPDATE_ZERO);
+        }
+
+        // 2. 更新团单
+        GroupBuyProgressVO groupBuyProgress = groupBuyRefundAggregate.getGroupBuyProgress();
+        Integer status = groupBuyRefundAggregate.getGroupBuyTeamStatusVO().getCode();
+        Integer lockCount = groupBuyProgress.getLockCount();
+        Integer completeCount = groupBuyProgress.getCompleteCount();
+        GroupBuyOrder groupBuyOrderReq = new GroupBuyOrder();
+        groupBuyOrderReq.setTeamId(teamId);
+        groupBuyOrderReq.setLockCount(lockCount);
+        groupBuyOrderReq.setCompleteCount(completeCount);
+        groupBuyOrderReq.setStatus(status);
+        int updatePaidFormedTeam = groupBuyOrderDao.paidFormed2Refund(groupBuyOrderReq);
+        if (1 != updatePaidFormedTeam) {
+            log.error("逆向流程-paidFormed2Refund，更新团单状态(退单-已支付已成团)失败 {} {}", tradeRefundOrderEntity.getUserId(),
+                    tradeRefundOrderEntity.getOrderId());
+            throw new AppException(ResponseCode.UPDATE_ZERO);
+        }
+
+        // 本地消息任务表
+        NotifyTask notifyTask = new NotifyTask();
+        notifyTask.setActivityId(tradeRefundOrderEntity.getActivityId());
+        notifyTask.setTeamId(tradeRefundOrderEntity.getTeamId());
+        notifyTask.setNotifyCategory(TaskNotifyCategoryEnumVO.TRADE_PAID_FORMED2REFUND.getCode());
+        notifyTask.setNotifyType(NotifyTypeEnumVO.MQ.getCode());
+        notifyTask.setNotifyMQ(rabbitMQProperties.getTopicRefund().getRoutingKey());
+        notifyTask.setNotifyCount(0);
+        notifyTask.setNotifyStatus(0);
+        notifyTask.setUuid(tradeRefundOrderEntity.getTeamId() + Constants.UNDERLINE + TaskNotifyCategoryEnumVO.TRADE_PAID_FORMED2REFUND.getCode() + Constants.UNDERLINE + tradeRefundOrderEntity.getOrderId());
+
+        notifyTask.setParameterJson(JSON.toJSONString(new HashMap<String, Object>() {{
+            put("type", RefundTypeEnumVO.PAID_FORMED.getCode());
+            put("userId", tradeRefundOrderEntity.getUserId());
+            put("teamId", tradeRefundOrderEntity.getTeamId());
+            put("orderId", tradeRefundOrderEntity.getOrderId());
+            put("activityId", tradeRefundOrderEntity.getActivityId());
+        }}));
+
         notifyTaskDao.insert(notifyTask);
 
         return NotifyTaskEntity.builder()

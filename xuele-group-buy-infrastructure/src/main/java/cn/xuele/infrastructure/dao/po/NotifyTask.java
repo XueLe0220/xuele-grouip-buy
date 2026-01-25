@@ -32,6 +32,9 @@ public class NotifyTask {
     /** 拼单组队 ID (业务唯一索引) */
     private String teamId;
 
+    /** 回调种类 */
+    private String notifyCategory;
+
     /** 回调类型 */
     private String notifyType;
 
@@ -49,6 +52,9 @@ public class NotifyTask {
 
     /** 请求参数 JSON 字符串 */
     private String parameterJson;
+
+    /** 唯一标识 */
+    private String uuid;
 
     /** 创建时间 */
     private LocalDateTime createTime;
