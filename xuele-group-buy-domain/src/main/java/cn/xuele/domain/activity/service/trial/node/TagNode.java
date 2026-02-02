@@ -29,10 +29,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class TagNode extends AbstractGroupBuyMarketSupport {
 
-    /**
-     * 下一个执行节点
-     */
-    private final EndNode endNode;
+    private final MarketNode marketNode;
+    private final ErrorNode errorNode;
 
 
     /**
@@ -48,6 +46,10 @@ public class TagNode extends AbstractGroupBuyMarketSupport {
 
         // 1. 从上下文中获取活动配置值对象 (GroupBuyActivityDiscountVO)
         GroupBuyActivityDiscountVO groupBuyActivityDiscountVO = dynamicContext.getGroupBuyActivityDiscountVO();
+
+        if (null == groupBuyActivityDiscountVO) {
+            return router(requestParameter, dynamicContext);
+        }
 
         String tagId = groupBuyActivityDiscountVO.getTagId();
         // 获取配置的大门状态 (true=默认开放, false=默认设防)
@@ -82,6 +84,10 @@ public class TagNode extends AbstractGroupBuyMarketSupport {
      */
     @Override
     public StrategyHandler<MarketProductEntity, DefaultActivityStrategyFactory.DynamicContext, TrialBalanceEntity> get(MarketProductEntity requestParameter, DefaultActivityStrategyFactory.DynamicContext dynamicContext) throws Exception {
-        return endNode;
+        // 不存在配置的拼团活动，走异常节点
+        if (null == dynamicContext.getGroupBuyActivityDiscountVO() || null == dynamicContext.getSkuVO()) {
+            return errorNode;
+        }
+        return marketNode;
     }
 }

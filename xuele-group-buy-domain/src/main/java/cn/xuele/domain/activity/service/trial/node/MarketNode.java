@@ -7,8 +7,6 @@ import cn.xuele.domain.activity.model.valobj.SkuVO;
 import cn.xuele.domain.activity.service.discount.IDiscountCalculateService;
 import cn.xuele.domain.activity.service.trial.AbstractGroupBuyMarketSupport;
 import cn.xuele.domain.activity.service.trial.factory.DefaultActivityStrategyFactory;
-import cn.xuele.domain.activity.service.trial.thread.QueryGroupBuyActivityDiscountVOThreadTask;
-import cn.xuele.domain.activity.service.trial.thread.QuerySkuVOThreadTask;
 import cn.xuele.types.design.framework.tree.StrategyHandler;
 import cn.xuele.types.enums.ResponseCode;
 import cn.xuele.types.exception.AppException;
@@ -19,9 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 营销节点 (Market Node)
@@ -40,44 +35,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 @RequiredArgsConstructor
 public class MarketNode extends AbstractGroupBuyMarketSupport {
 
-    private final ThreadPoolExecutor threadPoolExecutor;
-    private final TagNode tagNode;
+    private final EndNode endNode;
     private final ErrorNode errorNode;
     // Key: BeanName (例如 "ZJ", "MJ"), Value: Bean实例
     private final Map<String, IDiscountCalculateService> discountCalculateServiceMap;
 
-    @Override
-    protected void multiThread(MarketProductEntity requestParameter,
-                               DefaultActivityStrategyFactory.DynamicContext dynamicContext) throws ExecutionException, InterruptedException {
-
-        QueryGroupBuyActivityDiscountVOThreadTask queryGroupBuyActivityDiscountVOThreadTask =
-                new QueryGroupBuyActivityDiscountVOThreadTask(
-                        requestParameter.getGoodsId(),
-                        requestParameter.getSource(),
-                        requestParameter.getChannel(),
-                        repository
-                );
-
-        QuerySkuVOThreadTask querySkuVOThreadTask = new QuerySkuVOThreadTask(
-                requestParameter.getGoodsId(),
-                repository
-        );
-
-        FutureTask<GroupBuyActivityDiscountVO> groupBuyActivityDiscountVOFutureTask =
-                new FutureTask<>(queryGroupBuyActivityDiscountVOThreadTask);
-        FutureTask<SkuVO> skuVOFutureTask = new FutureTask<>(querySkuVOThreadTask);
-
-        threadPoolExecutor.execute(groupBuyActivityDiscountVOFutureTask);
-        threadPoolExecutor.execute(skuVOFutureTask);
-
-        GroupBuyActivityDiscountVO activityDiscountVO = groupBuyActivityDiscountVOFutureTask.get();
-        SkuVO skuVO = skuVOFutureTask.get();
-
-        dynamicContext.setSkuVO(skuVO);
-        dynamicContext.setGroupBuyActivityDiscountVO(activityDiscountVO);
-
-        log.info("拼团商品查询试算服务-MarketNode userId:{} 异步线程加载数据完成", requestParameter.getUserId());
-    }
 
     @Override
     public TrialBalanceEntity doApply(MarketProductEntity requestParameter,
@@ -106,8 +68,9 @@ public class MarketNode extends AbstractGroupBuyMarketSupport {
         }
 
         // 3. 执行核心计算
+        boolean isUsable = dynamicContext.isEnable() && dynamicContext.isVisible();
         BigDecimal payPrice = discountCalculateService.calculate(requestParameter.getUserId(),
-                skuVO.getOriginalPrice(), groupBuyDiscount);
+                skuVO.getOriginalPrice(), groupBuyDiscount, isUsable);
 
         // 4. 计算优惠减免金额 (Deduction Price)
         // 减免额 = 原价 - 最终支付价
@@ -126,6 +89,6 @@ public class MarketNode extends AbstractGroupBuyMarketSupport {
         if (null == dynamicContext.getGroupBuyActivityDiscountVO() || null == dynamicContext.getSkuVO() || null == dynamicContext.getDeductionPrice()) {
             return errorNode;
         }
-        return tagNode;
+        return endNode;
     }
 }

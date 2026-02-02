@@ -29,18 +29,16 @@ public abstract class AbstractDiscountCalculateService implements IDiscountCalcu
      */
     @Override
     public BigDecimal calculate(String userId, BigDecimal originalPrice,
-                                GroupBuyActivityDiscountVO.GroupBuyDiscount groupBuyDiscount) {
+                                GroupBuyActivityDiscountVO.GroupBuyDiscount groupBuyDiscount, boolean isUsable) {
 
         // 1. 获取优惠类型
         DiscountTypeEnum discountType = groupBuyDiscount.getDiscountType();
 
         // 2. 人群标签过滤 (仅针对 TAG 类型优惠)
         if (DiscountTypeEnum.TAG.equals(discountType)) {
-            // tagId 就是我们在大数据平台圈选的人群包ID
-            boolean isCrowdRange = filterTagId(userId);
 
             // 如果不在人群范围内，不予优惠，直接返回原价
-            if (!isCrowdRange) {
+            if (!isUsable) {
                 log.info("折扣优惠计算拦截，用户不再优惠人群标签范围内 userId:{}", userId);
                 return originalPrice;
             }
@@ -55,14 +53,4 @@ public abstract class AbstractDiscountCalculateService implements IDiscountCalcu
      */
     protected abstract BigDecimal doCalculate(BigDecimal originalPrice,
                                               GroupBuyActivityDiscountVO.GroupBuyDiscount groupBuyDiscount);
-
-    /**
-     * 人群标签校验
-     * * @param userId 用户ID
-     *
-     * @return boolean true-在人群内(或无限制) / false-不在人群内
-     */
-    private boolean filterTagId(String userId) {
-        return repository.isUserInTag(userId);
-    }
 }

@@ -398,7 +398,6 @@ public class TradeRepository implements ITradeRepository {
     public boolean occupyTeamStock(String teamStockKey, String recoveryTeamStockKey, Integer targetCount,
                                    Integer validTime) {
         long recoveryCount = redissonClient.getAtomicLong(recoveryTeamStockKey).get();
-        redissonClient.getAtomicLong(recoveryTeamStockKey).get();
 
         RAtomicLong teamStock = redissonClient.getAtomicLong(teamStockKey);
         long occupy = teamStock.incrementAndGet() + 1;

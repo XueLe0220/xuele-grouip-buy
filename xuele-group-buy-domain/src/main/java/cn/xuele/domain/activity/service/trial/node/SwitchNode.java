@@ -30,7 +30,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SwitchNode extends AbstractGroupBuyMarketSupport {
 
-    private final MarketNode marketNode;
+    private final TagNode tagNode;
 
     @Override
     public TrialBalanceEntity doApply(MarketProductEntity requestParameter, DefaultActivityStrategyFactory.DynamicContext dynamicContext) throws Exception {
@@ -56,7 +56,7 @@ public class SwitchNode extends AbstractGroupBuyMarketSupport {
 
     @Override
     public StrategyHandler<MarketProductEntity, DefaultActivityStrategyFactory.DynamicContext, TrialBalanceEntity> get(MarketProductEntity requestParameter, DefaultActivityStrategyFactory.DynamicContext dynamicContext) {
-        return marketNode;
+        return tagNode;
     }
 
 }
