@@ -3,11 +3,10 @@ package cn.xuele.domain.activity.service.trial.node;
 import cn.xuele.domain.activity.model.entity.MarketProductEntity;
 import cn.xuele.domain.activity.model.entity.TrialBalanceEntity;
 import cn.xuele.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
+import cn.xuele.domain.activity.model.valobj.SCSkuActivityVO;
 import cn.xuele.domain.activity.model.valobj.SkuVO;
 import cn.xuele.domain.activity.service.trial.AbstractGroupBuyMarketSupport;
 import cn.xuele.domain.activity.service.trial.factory.DefaultActivityStrategyFactory;
-import cn.xuele.domain.activity.service.trial.thread.QueryGroupBuyActivityDiscountVOThreadTask;
-import cn.xuele.domain.activity.service.trial.thread.QuerySkuVOThreadTask;
 import cn.xuele.types.design.framework.tree.StrategyHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -37,29 +35,26 @@ public class DataLoadNode extends AbstractGroupBuyMarketSupport {
     protected void multiThread(MarketProductEntity requestParameter,
                                DefaultActivityStrategyFactory.DynamicContext dynamicContext) throws ExecutionException, InterruptedException {
 
-        QueryGroupBuyActivityDiscountVOThreadTask queryGroupBuyActivityDiscountVOThreadTask =
-                new QueryGroupBuyActivityDiscountVOThreadTask(
-                        requestParameter.getGoodsId(),
-                        requestParameter.getSource(),
-                        requestParameter.getChannel(),
-                        repository
-                );
+        String goodsId = requestParameter.getGoodsId();
+        String source = requestParameter.getSource();
+        String channel = requestParameter.getChannel();
 
-        QuerySkuVOThreadTask querySkuVOThreadTask = new QuerySkuVOThreadTask(
-                requestParameter.getGoodsId(),
-                repository
-        );
+        CompletableFuture<GroupBuyActivityDiscountVO> groupBuyActivityDiscountVOCompletableFuture = CompletableFuture.supplyAsync(() -> {
+            SCSkuActivityVO scSkuActivityVO = repository.querySCSkuActivityBySCGoodsId(goodsId, source, channel);
+            if (null == scSkuActivityVO) {
+                log.error("该商品无关联活动");
+                return null;
+            }
+            return repository.queryGroupBuyActivityDiscountVO(scSkuActivityVO.getActivityId());
+        },threadPoolExecutor);
 
-        FutureTask<GroupBuyActivityDiscountVO> groupBuyActivityDiscountVOFutureTask =
-                new FutureTask<>(queryGroupBuyActivityDiscountVOThreadTask);
-        FutureTask<SkuVO> skuVOFutureTask = new FutureTask<>(querySkuVOThreadTask);
+        CompletableFuture<SkuVO> skuVOCompletableFuture = CompletableFuture.supplyAsync(() -> repository.querySkuByGoodsId(goodsId),threadPoolExecutor);
 
-        threadPoolExecutor.execute(groupBuyActivityDiscountVOFutureTask);
-        threadPoolExecutor.execute(skuVOFutureTask);
-        
+        CompletableFuture.allOf(groupBuyActivityDiscountVOCompletableFuture, skuVOCompletableFuture).get();
 
-        GroupBuyActivityDiscountVO activityDiscountVO = groupBuyActivityDiscountVOFutureTask.get();
-        SkuVO skuVO = skuVOFutureTask.get();
+        GroupBuyActivityDiscountVO activityDiscountVO = groupBuyActivityDiscountVOCompletableFuture.join();
+        SkuVO skuVO = skuVOCompletableFuture.join();
+
 
         dynamicContext.setSkuVO(skuVO);
         dynamicContext.setGroupBuyActivityDiscountVO(activityDiscountVO);
