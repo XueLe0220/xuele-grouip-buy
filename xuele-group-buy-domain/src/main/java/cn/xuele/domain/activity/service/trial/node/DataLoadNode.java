@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -55,6 +56,7 @@ public class DataLoadNode extends AbstractGroupBuyMarketSupport {
 
         threadPoolExecutor.execute(groupBuyActivityDiscountVOFutureTask);
         threadPoolExecutor.execute(skuVOFutureTask);
+        
 
         GroupBuyActivityDiscountVO activityDiscountVO = groupBuyActivityDiscountVOFutureTask.get();
         SkuVO skuVO = skuVOFutureTask.get();

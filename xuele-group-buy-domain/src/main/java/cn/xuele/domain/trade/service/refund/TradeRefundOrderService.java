@@ -3,6 +3,7 @@ package cn.xuele.domain.trade.service.refund;
 import cn.xuele.domain.trade.adapter.repository.ITradeRepository;
 import cn.xuele.domain.trade.model.entity.GroupBuyTeamEntity;
 import cn.xuele.domain.trade.model.entity.MarketPayOrderEntity;
+import cn.xuele.domain.trade.model.entity.TeamRefundEvent;
 import cn.xuele.domain.trade.model.entity.TradeRefundBehaviorEntity;
 import cn.xuele.domain.trade.model.entity.TradeRefundCommandEntity;
 import cn.xuele.domain.trade.model.entity.TradeRefundOrderEntity;
@@ -55,7 +56,7 @@ public class TradeRefundOrderService implements ITradeRefundOrderService {
             throw new AppException(ResponseCode.E0002.getCode(), "订单不存在");
         }
 
-        TradeOrderStatusEnumVO tradeOrderStatus = marketPayOrderEntity.getTradeOrderStatus();
+        TradeOrderStatusEnumVO tradeOrderStatus = marketPayOrderEntity.getTradeOrderStatusEnumVO();
         String teamId = marketPayOrderEntity.getTeamId();
         String orderId = marketPayOrderEntity.getOrderId();
 
@@ -92,5 +93,19 @@ public class TradeRefundOrderService implements ITradeRefundOrderService {
                 .teamId(teamId)
                 .tradeRefundBehaviorEnum(TradeRefundBehaviorEntity.TradeRefundBehaviorEnum.SUCCESS)
                 .build();
+    }
+
+    @Override
+    public void restoreTeamLockStock(TeamRefundEvent teamRefundEvent) throws Exception {
+        log.info("逆向流程，恢复锁单量 userId:{} activityId:{} teamId:{}", teamRefundEvent.getUserId(), teamRefundEvent.getActivityId(), teamRefundEvent.getTeamId());
+        String type = teamRefundEvent.getType();
+
+        // 根据枚举值获取对应的退单类型
+        RefundTypeEnumVO refundTypeEnumVO = RefundTypeEnumVO.getRefundTypeEnumVOByCode(type);
+        IRefundStrategy refundOrderStrategy = refundStrategyMap.get(refundTypeEnumVO.getStrategy());
+
+        // 逆向库存操作，恢复锁单量
+        refundOrderStrategy.reverseStock(teamRefundEvent);
+
     }
 }

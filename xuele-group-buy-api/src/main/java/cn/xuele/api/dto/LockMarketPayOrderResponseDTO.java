@@ -19,14 +19,17 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LockMarketPayOrderResponseDTO {
-
-    /** 预购订单ID，系统内部生成的唯一交易单号 */
+    /** 预购订单ID */
     private String orderId;
-
-    /** 折扣金额，告诉前端用户省了多少钱 */
+    /** 原始价格 */
+    private BigDecimal originalPrice;
+    /** 折扣金额 */
     private BigDecimal deductionPrice;
-
-    /** 交易订单状态 (0-初始锁定)，通常用于前端判断是否跳转收银台 */
+    /** 支付金额 */
+    private BigDecimal payPrice;
+    /** 交易订单状态 */
     private Integer tradeOrderStatus;
+    /** 组队ID */
+    private String teamId;
 
 }

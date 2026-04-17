@@ -44,7 +44,7 @@ public class OutTradeNoRuleFilter implements ILogicHandler<TradeSettlementRuleCo
         );
 
         // 3. 校验逻辑：订单不存在 或 状态不正确
-        if (null == marketPayOrderEntity || TradeOrderStatusEnumVO.CLOSE.equals(marketPayOrderEntity.getTradeOrderStatus())) {
+        if (null == marketPayOrderEntity || TradeOrderStatusEnumVO.CLOSE.equals(marketPayOrderEntity.getTradeOrderStatusEnumVO())) {
             log.error("不存在的外部交易单号或用户已退单，不需要做支付订单结算:{} outTradeNo:{}", requestParameter.getUserId(), requestParameter.getOutTradeNo());
             throw new AppException(ResponseCode.E0104);
         }

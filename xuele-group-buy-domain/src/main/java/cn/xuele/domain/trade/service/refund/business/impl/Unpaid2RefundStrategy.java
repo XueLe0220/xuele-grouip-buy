@@ -3,8 +3,10 @@ package cn.xuele.domain.trade.service.refund.business.impl;
 import cn.xuele.domain.trade.adapter.repository.ITradeRepository;
 import cn.xuele.domain.trade.model.aggregate.GroupBuyRefundAggregate;
 import cn.xuele.domain.trade.model.entity.NotifyTaskEntity;
+import cn.xuele.domain.trade.model.entity.TeamRefundEvent;
 import cn.xuele.domain.trade.model.entity.TradeRefundOrderEntity;
 import cn.xuele.domain.trade.service.ITradeTaskService;
+import cn.xuele.domain.trade.service.lock.fatcory.TradeLockRuleFilterFactory;
 import cn.xuele.domain.trade.service.refund.business.IRefundStrategy;
 import cn.xuele.types.exception.AppException;
 import com.alibaba.fastjson.JSON;
@@ -55,6 +57,15 @@ public class Unpaid2RefundStrategy implements IRefundStrategy {
                 }
             });
         }
+    }
+
+    @Override
+    public void reverseStock(TeamRefundEvent teamRefundEvent) throws Exception {
+        log.info("退单；恢复锁单量 - 未支付，未成团，但有锁单记录，要恢复锁单库存 {} {} {}", teamRefundEvent.getUserId(), teamRefundEvent.getActivityId(), teamRefundEvent.getTeamId());
+        // 1. 恢复库存key
+        String recoveryTeamStockKey = TradeLockRuleFilterFactory.generateRecoveryTeamStockKey(teamRefundEvent.getActivityId(), teamRefundEvent.getTeamId());
+        // 2. 退单恢复「未支付，未成团，但有锁单记录，要恢复锁单库存」
+        repository.refund2AddRecovery(recoveryTeamStockKey, teamRefundEvent.getOrderId());
     }
 
 }

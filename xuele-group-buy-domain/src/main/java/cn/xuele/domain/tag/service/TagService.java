@@ -43,7 +43,7 @@ public class TagService implements ITagService {
         // TODO: 这里未来将接入规则引擎或策略模式 or AI。
         // 目前根据 jobEntity.getTagType() 和 getTagRule() 决定去查订单库还是行为库。
         // 现在暂时使用模拟数据。
-        List<String> userIdList = new ArrayList<String>() {{
+        List<String> userIdList = new ArrayList<>() {{
             add("xuele");
             add("keke");
             add("bangzhi");

@@ -1,5 +1,9 @@
 package cn.xuele.trigger.listener;
 
+import cn.xuele.domain.trade.model.entity.TeamRefundEvent;
+import cn.xuele.domain.trade.service.ITradeRefundOrderService;
+import com.alibaba.fastjson.JSON;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
@@ -13,11 +17,21 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class TeamSuccessTopicListener {
+
+    private final ITradeRefundOrderService tradeRefundOrderService;
 
     @RabbitListener(queues = "${spring.rabbitmq.config.producer.topic_team_success.queue}")
     public void listener(String message) {
-        log.info("【MQ】接收消息 【拼团成功】 content: {}", message);
-
+        log.info("接收消息（退单成功）- 恢复拼团队伍锁单量:{}", message);
+        TeamRefundEvent teamRefundEvent = JSON.parseObject(message, TeamRefundEvent.class);
+        try {
+            tradeRefundOrderService.restoreTeamLockStock(teamRefundEvent);
+        } catch (Exception e) {
+            log.info("接收消息（退单成功）- 恢复拼团队伍锁单量失败:{}", message, e);
+            // 抛异常，mq消息会重试
+            throw new RuntimeException(e);
+        }
     }
 }

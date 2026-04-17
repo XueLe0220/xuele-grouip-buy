@@ -213,13 +213,17 @@ public class MarketTradeController implements IMarketTradeService {
      * 构造通用的成功返回对象
      */
     private Response<LockMarketPayOrderResponseDTO> buildSuccessResponse(MarketPayOrderEntity order) {
+        // 返回结果
         return Response.<LockMarketPayOrderResponseDTO>builder()
                 .code(ResponseCode.SUCCESS.getCode())
                 .info(ResponseCode.SUCCESS.getInfo())
                 .data(LockMarketPayOrderResponseDTO.builder()
                         .orderId(order.getOrderId())
+                        .originalPrice(order.getOriginalPrice())
                         .deductionPrice(order.getDeductionPrice())
-                        .tradeOrderStatus(order.getTradeOrderStatus().getCode())
+                        .payPrice(order.getPayPrice())
+                        .tradeOrderStatus(order.getTradeOrderStatusEnumVO().getCode())
+                        .teamId(order.getTeamId())
                         .build())
                 .build();
     }

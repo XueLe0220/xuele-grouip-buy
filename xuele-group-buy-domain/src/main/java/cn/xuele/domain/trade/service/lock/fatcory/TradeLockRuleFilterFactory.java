@@ -27,6 +27,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class TradeLockRuleFilterFactory {
 
+    private static final String teamStockKey = "group_buy_market_team_stock_key_";
+
     /**
      * 构造交易规则过滤链
      * 包含：活动可用性校验 -> 个人限购校验 -> 链路结束节点
@@ -47,6 +49,14 @@ public class TradeLockRuleFilterFactory {
         return linkArmory.getLogicLink();
     }
 
+    public static String generateTeamStockKey(Long activityId, String teamId){
+        return teamStockKey + activityId + "_" + teamId;
+    }
+
+    public static String generateRecoveryTeamStockKey(Long activityId, String teamId) {
+        return teamStockKey + activityId + "_" + teamId + "_recovery";
+    }
+
     /**
      * 交易规则过滤链上下文
      */
@@ -58,8 +68,6 @@ public class TradeLockRuleFilterFactory {
 
         private String recoveryTeamStockKey;
 
-        @Builder.Default
-        private String teamStockKey = "group_buy_market_team_stock_key_";
 
         /** 拼团活动实体 */
         private GroupBuyActivityEntity groupBuyActivityEntity;
@@ -70,12 +78,12 @@ public class TradeLockRuleFilterFactory {
 
         public String generateTeamStockKey(String teamId) {
             if (StringUtils.isBlank(teamId)) return null;
-            return teamStockKey + groupBuyActivityEntity.getActivityId() + "_" + teamId;
+            return TradeLockRuleFilterFactory.generateTeamStockKey(groupBuyActivityEntity.getActivityId(), teamId);
         }
 
         public String generateRecoveryTeamStockKey(String teamId) {
             if (StringUtils.isBlank(teamId)) return null;
-            return teamStockKey + groupBuyActivityEntity.getActivityId() + "_" + teamId + "_recovery";
+            return TradeLockRuleFilterFactory.generateRecoveryTeamStockKey(groupBuyActivityEntity.getActivityId(), teamId);
         }
 
     }

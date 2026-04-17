@@ -9,13 +9,8 @@ import java.math.BigDecimal;
 
 /**
  * 优惠计算抽象类 (Abstract Strategy)
- * <p>
- * 设计模式：Template Method Pattern (模板方法模式)
- * 职责：
- * 1. 编排标准的计算流程：用户资格校验 -> 具体的金额计算。
- * 2. 将通用的"人群过滤"逻辑上浮到父类，子类只需关注算法本身。
  *
- * @author XueLe (肖金城)
+ * @author XueLe
  * @version 1.0.0
  * @since 2025/12/25 15:55
  */

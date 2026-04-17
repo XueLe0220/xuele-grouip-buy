@@ -4,6 +4,7 @@ import cn.xuele.domain.trade.adapter.repository.ITradeRepository;
 import cn.xuele.domain.trade.model.aggregate.GroupBuyRefundAggregate;
 import cn.xuele.domain.trade.model.entity.GroupBuyTeamEntity;
 import cn.xuele.domain.trade.model.entity.NotifyTaskEntity;
+import cn.xuele.domain.trade.model.entity.TeamRefundEvent;
 import cn.xuele.domain.trade.model.entity.TradeRefundOrderEntity;
 import cn.xuele.domain.trade.service.ITradeTaskService;
 import cn.xuele.domain.trade.service.refund.business.IRefundStrategy;
@@ -55,5 +56,10 @@ public class PaidFormed2RefundStrategy implements IRefundStrategy {
                 }
             });
         }
+    }
+
+    @Override
+    public void reverseStock(TeamRefundEvent teamRefundEvent) throws Exception {
+        log.info("退单；已支付、已成团，队伍组队结束，不需要恢复锁单量 {} {} {}", teamRefundEvent.getUserId(), teamRefundEvent.getActivityId(), teamRefundEvent.getTeamId());
     }
 }

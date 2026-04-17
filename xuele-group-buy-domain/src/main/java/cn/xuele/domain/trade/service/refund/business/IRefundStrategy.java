@@ -1,5 +1,6 @@
 package cn.xuele.domain.trade.service.refund.business;
 
+import cn.xuele.domain.trade.model.entity.TeamRefundEvent;
 import cn.xuele.domain.trade.model.entity.TradeRefundOrderEntity;
 
 /**
@@ -12,4 +13,6 @@ import cn.xuele.domain.trade.model.entity.TradeRefundOrderEntity;
 public interface IRefundStrategy {
 
     void refund(TradeRefundOrderEntity tradeRefundOrderEntity);
+
+    void reverseStock(TeamRefundEvent teamRefundEvent) throws Exception;
 }

@@ -104,4 +104,6 @@ public interface ITradeRepository {
     NotifyTaskEntity paidUnformed2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate);
 
     NotifyTaskEntity paidFormed2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate);
+
+    void refund2AddRecovery(String recoveryTeamStockKey, String orderId);
 }

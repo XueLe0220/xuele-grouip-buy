@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 交易仓储实现类 (Infrastructure Layer)
@@ -98,7 +99,7 @@ public class TradeRepository implements ITradeRepository {
                 .teamId(groupBuyOrderList.getTeamId())
                 .orderId(groupBuyOrderList.getOrderId())
                 .deductionPrice(groupBuyOrderList.getDeductionPrice())
-                .tradeOrderStatus(TradeOrderStatusEnumVO.valueOf(groupBuyOrderList.getStatus()))
+                .tradeOrderStatusEnumVO(TradeOrderStatusEnumVO.valueOf(groupBuyOrderList.getStatus()))
                 .build();
     }
 
@@ -207,8 +208,11 @@ public class TradeRepository implements ITradeRepository {
         // 4. 返回结果
         return MarketPayOrderEntity.builder()
                 .orderId(orderId)
+                .originalPrice(payDiscountEntity.getOriginalPrice())
                 .deductionPrice(payDiscountEntity.getDeductionPrice())
-                .tradeOrderStatus(TradeOrderStatusEnumVO.CREATE)
+                .payPrice(payDiscountEntity.getPayPrice())
+                .tradeOrderStatusEnumVO(TradeOrderStatusEnumVO.CREATE)
+                .teamId(teamId)
                 .build();
     }
 
@@ -619,4 +623,37 @@ public class TradeRepository implements ITradeRepository {
                 .parameterJson(notifyTask.getParameterJson())
                 .build();
     }
+
+    @Override
+    public void refund2AddRecovery(String recoveryTeamStockKey, String orderId) {
+        // 如果恢复库存key为空，直接返回
+        if (StringUtils.isBlank(recoveryTeamStockKey) || StringUtils.isBlank(orderId)) {
+            return;
+        }
+
+        // 使用orderId作为锁的key，避免同一订单重复恢复库存
+        String lockKey = "refund_lock_" + orderId;
+
+        // 尝试获取分布式锁，防止重复操作 30天过期
+        RBucket<String> bucket = redissonClient.getBucket(lockKey);
+        boolean lockAcquired = bucket.setIfAbsent("occupied", Duration.ofDays(30));
+
+        if (!lockAcquired) {
+            log.warn("订单 {} 恢复库存操作已在进行中，跳过重复操作", orderId);
+            return;
+        }
+
+        try {
+            // 在锁保护下执行库存恢复操作
+            redissonClient.getAtomicLong(recoveryTeamStockKey).incrementAndGet();
+            log.info("订单 {} 恢复库存成功，恢复库存key: {}", orderId, recoveryTeamStockKey);
+        } catch (Exception e) {
+            log.error("订单 {} 恢复库存失败，恢复库存key: {}", orderId, recoveryTeamStockKey, e);
+            // 如果抛异常则释放锁，允许MQ重新消费恢复库存
+            bucket.delete();
+            throw e;
+        }
+
+    }
+
 }

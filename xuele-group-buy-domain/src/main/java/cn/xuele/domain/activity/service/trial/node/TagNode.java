@@ -5,7 +5,6 @@ import cn.xuele.domain.activity.model.entity.TrialBalanceEntity;
 import cn.xuele.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import cn.xuele.domain.activity.service.trial.AbstractGroupBuyMarketSupport;
 import cn.xuele.domain.activity.service.trial.factory.DefaultActivityStrategyFactory;
-import cn.xuele.domain.tag.adapter.repository.ITagRepository;
 import cn.xuele.types.design.framework.tree.StrategyHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

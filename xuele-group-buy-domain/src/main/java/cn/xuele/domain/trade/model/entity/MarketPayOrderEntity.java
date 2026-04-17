@@ -23,24 +23,17 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class MarketPayOrderEntity {
 
-    /** 拼团团队ID */
+    /** 拼单组队ID */
     private String teamId;
-
-    /**
-     * 预购订单ID (聚合根标识)
-     * <p>
-     * 对应 group_buy_order_list.order_id，也是支付渠道的关联凭证。
-     */
+    /** 预购订单ID */
     private String orderId;
-
-    /** 优惠金额 (营销计算结果) */
+    /** 原始价格 */
+    private BigDecimal originalPrice;
+    /** 折扣金额 */
     private BigDecimal deductionPrice;
-
-    /**
-     * 交易订单状态
-     * <p>
-     * 描述订单生命周期 (如：创建锁单、支付完成、交易关闭)。
-     */
-    private TradeOrderStatusEnumVO tradeOrderStatus;
+    /** 支付金额 */
+    private BigDecimal payPrice;
+    /** 交易订单状态枚举 */
+    private TradeOrderStatusEnumVO tradeOrderStatusEnumVO;
 
 }

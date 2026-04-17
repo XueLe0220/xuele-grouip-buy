@@ -20,49 +20,53 @@ import java.util.Arrays;
 public enum RefundTypeEnumVO {
     UNPAID_UNLOCK("unpaid_unlock", "unpaid2RefundStrategy", "未支付，未成团") {
         @Override
-        public boolean matches(GroupBuyTeamStatusVO groupBuyTeamStatusVO, TradeOrderStatusEnumVO tradeOrderStatusEnumVO) {
+        public boolean matches(GroupBuyTeamStatusVO groupBuyTeamStatusVO,
+                               TradeOrderStatusEnumVO tradeOrderStatusEnumVO) {
             return GroupBuyTeamStatusVO.PROGRESS.equals(groupBuyTeamStatusVO) && TradeOrderStatusEnumVO.CREATE.equals(tradeOrderStatusEnumVO);
         }
     },
 
     PAID_UNFORMED("paid_unformed", "paidUnformed2RefundStrategy", "已支付，未成团") {
         @Override
-        public boolean matches(GroupBuyTeamStatusVO groupBuyTeamStatusVO, TradeOrderStatusEnumVO tradeOrderStatusEnumVO) {
+        public boolean matches(GroupBuyTeamStatusVO groupBuyTeamStatusVO,
+                               TradeOrderStatusEnumVO tradeOrderStatusEnumVO) {
             return GroupBuyTeamStatusVO.PROGRESS.equals(groupBuyTeamStatusVO) && TradeOrderStatusEnumVO.COMPLETE.equals(tradeOrderStatusEnumVO);
         }
     },
 
-    PAID_FORMED("paid_formed", "paidFormed2RefundStrategy", "已支付，已成团"){
-
+    PAID_FORMED("paid_formed", "paidFormed2RefundStrategy", "已支付，已成团") {
         @Override
-        public boolean matches(GroupBuyTeamStatusVO groupBuyTeamStatusVO, TradeOrderStatusEnumVO tradeOrderStatusEnumVO) {
+        public boolean matches(GroupBuyTeamStatusVO groupBuyTeamStatusVO,
+                               TradeOrderStatusEnumVO tradeOrderStatusEnumVO) {
             // 完成、完成含退单，都做此处理
             return (GroupBuyTeamStatusVO.COMPLETE.equals(groupBuyTeamStatusVO) || GroupBuyTeamStatusVO.COMPLETE_FAIL.equals(groupBuyTeamStatusVO))
                     && TradeOrderStatusEnumVO.COMPLETE.equals(tradeOrderStatusEnumVO);
         }
-    }
-
-    ;
+    };
 
     private String code;
     private String strategy;
     private String info;
 
-    public abstract boolean matches(GroupBuyTeamStatusVO groupBuyTeamStatusVO, TradeOrderStatusEnumVO tradeOrderStatusEnumVO);
+    public abstract boolean matches(GroupBuyTeamStatusVO groupBuyTeamStatusVO,
+                                    TradeOrderStatusEnumVO tradeOrderStatusEnumVO);
 
-    public static RefundTypeEnumVO getRefundStrategy(GroupBuyTeamStatusVO groupBuyTeamStatusVO, TradeOrderStatusEnumVO tradeOrderStatusEnumVO){
+    public static RefundTypeEnumVO getRefundStrategy(GroupBuyTeamStatusVO groupBuyTeamStatusVO,
+                                                     TradeOrderStatusEnumVO tradeOrderStatusEnumVO) {
         return Arrays.stream(values())
-                .filter(refundType-> refundType.matches(groupBuyTeamStatusVO, tradeOrderStatusEnumVO))
+                .filter(refundType -> refundType.matches(groupBuyTeamStatusVO, tradeOrderStatusEnumVO))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("不支持的退款状态组合: groupBuyTeamStatus=" + groupBuyTeamStatusVO + ", tradeOrderStatus=" + tradeOrderStatusEnumVO));
+                .orElseThrow(() -> new RuntimeException("不支持的退款状态组合: groupBuyTeamStatus=" + groupBuyTeamStatusVO + "," +
+                        " tradeOrderStatus=" + tradeOrderStatusEnumVO));
     }
 
-    public static RefundTypeEnumVO valueOf(Integer code) {
+    public static RefundTypeEnumVO getRefundTypeEnumVOByCode(String code) {
         return switch (code) {
-            case 1 -> UNPAID_UNLOCK;
-            case 2 -> PAID_UNFORMED;
-            case 3 -> PAID_FORMED;
+            case "unpaid_unlock" -> UNPAID_UNLOCK;
+            case "paid_unformed" -> PAID_UNFORMED;
+            case "paid_formed" -> PAID_FORMED;
             default -> throw new RuntimeException("退单类型枚举值不存在: " + code);
         };
     }
+
 }
