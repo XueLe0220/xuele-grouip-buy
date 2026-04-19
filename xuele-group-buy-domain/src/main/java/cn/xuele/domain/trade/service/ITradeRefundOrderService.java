@@ -1,6 +1,6 @@
 package cn.xuele.domain.trade.service;
 
-import cn.xuele.domain.trade.model.entity.TeamRefundEvent;
+import cn.xuele.domain.trade.model.entity.TeamRefundSuccessEvent;
 import cn.xuele.domain.trade.model.entity.TradeRefundBehaviorEntity;
 import cn.xuele.domain.trade.model.entity.TradeRefundCommandEntity;
 
@@ -21,15 +21,15 @@ public interface ITradeRefundOrderService {
      * @param tradeRefundCommandEntity 退单指令对象(含外部单号、用户ID)
      * @return 退单处理结果(包含处理状态 SUCCESS/REPEAT/FAIL)
      */
-    TradeRefundBehaviorEntity refund(TradeRefundCommandEntity tradeRefundCommandEntity);
+    TradeRefundBehaviorEntity refund(TradeRefundCommandEntity tradeRefundCommandEntity) throws Exception;
 
 
 
     /**
      * 退单恢复锁单库存
-     * @param teamRefundEvent 退单消息
+     * @param teamRefundSuccessEvent 退单消息
      * @throws Exception 异常
      */
-    void restoreTeamLockStock(TeamRefundEvent teamRefundEvent) throws Exception;
+    void restoreTeamLockStock(TeamRefundSuccessEvent teamRefundSuccessEvent) throws Exception;
 
 }

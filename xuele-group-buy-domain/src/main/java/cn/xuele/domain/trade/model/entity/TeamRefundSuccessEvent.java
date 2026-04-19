@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class TeamRefundEvent {
+public class TeamRefundSuccessEvent {
 
     /**
      * 退单类型

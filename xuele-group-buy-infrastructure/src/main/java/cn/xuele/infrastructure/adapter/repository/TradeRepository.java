@@ -52,7 +52,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 交易仓储实现类 (Infrastructure Layer)
@@ -380,23 +379,37 @@ public class TradeRepository implements ITradeRepository {
                 .notifyUrl(notifyTask.getNotifyUrl())
                 .notifyCount(notifyTask.getNotifyCount())
                 .parameterJson(notifyTask.getParameterJson())
+                .uuid(notifyTask.getUuid())
                 .build());
     }
 
     @Override
-    public int updateNotifyTaskStatusSuccess(String teamId) {
-        return notifyTaskDao.updateNotifyTaskStatusSuccess(teamId);
+    public int updateNotifyTaskStatusSuccess(NotifyTaskEntity notifyTaskEntity) {
+        NotifyTask notifyTask = NotifyTask.builder()
+                .teamId(notifyTaskEntity.getTeamId())
+                .uuid(notifyTaskEntity.getUuid())
+                .build();
+        return notifyTaskDao.updateNotifyTaskStatusSuccess(notifyTask);
     }
 
     @Override
-    public int updateNotifyTaskStatusError(String teamId) {
-        return notifyTaskDao.updateNotifyTaskStatusError(teamId);
+    public int updateNotifyTaskStatusError(NotifyTaskEntity notifyTaskEntity) {
+        NotifyTask notifyTask = NotifyTask.builder()
+                .teamId(notifyTaskEntity.getTeamId())
+                .uuid(notifyTaskEntity.getUuid())
+                .build();
+        return notifyTaskDao.updateNotifyTaskStatusError(notifyTask);
     }
 
     @Override
-    public int updateNotifyTaskStatusRetry(String teamId) {
-        return notifyTaskDao.updateNotifyTaskStatusRetry(teamId);
+    public int updateNotifyTaskStatusRetry(NotifyTaskEntity notifyTaskEntity) {
+        NotifyTask notifyTask = NotifyTask.builder()
+                .teamId(notifyTaskEntity.getTeamId())
+                .uuid(notifyTaskEntity.getUuid())
+                .build();
+        return notifyTaskDao.updateNotifyTaskStatusRetry(notifyTask);
     }
+
 
     @Override
     public boolean occupyTeamStock(String teamStockKey, String recoveryTeamStockKey, Integer targetCount,

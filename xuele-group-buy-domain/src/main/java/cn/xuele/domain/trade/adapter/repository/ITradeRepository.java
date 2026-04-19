@@ -75,17 +75,17 @@ public interface ITradeRepository {
     /**
      * 更新任务状态：执行成功
      */
-    int updateNotifyTaskStatusSuccess(String teamId);
+    int updateNotifyTaskStatusSuccess(NotifyTaskEntity notifyTask);
 
     /**
      * 更新任务状态：执行失败（不再重试）
      */
-    int updateNotifyTaskStatusError(String teamId);
+    int updateNotifyTaskStatusError(NotifyTaskEntity notifyTask);
 
     /**
      * 更新任务状态：准备重试（增加重试计数）
      */
-    int updateNotifyTaskStatusRetry(String teamId);
+    int updateNotifyTaskStatusRetry(NotifyTaskEntity notifyTask);
 
     /**
      * 缓存层抢占组队库存（Redis原子递增，无锁化设计）

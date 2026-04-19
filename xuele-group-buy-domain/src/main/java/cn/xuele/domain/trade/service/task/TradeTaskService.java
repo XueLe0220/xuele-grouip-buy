@@ -77,7 +77,7 @@ public class TradeTaskService implements ITradeTaskService {
 
                 // 1. 成功
                 if (NotifyTaskHTTPEnumVO.SUCCESS.getCode().equals(response)) {
-                    int updateCount = repository.updateNotifyTaskStatusSuccess(notifyTask.getTeamId());
+                    int updateCount = repository.updateNotifyTaskStatusSuccess(notifyTask);
                     if (updateCount > 0) successCount++;
                 }
                 // 2. 失败 (业务逻辑层面的失败，如 404/500)
@@ -87,10 +87,10 @@ public class TradeTaskService implements ITradeTaskService {
 
                     if (notifyTask.hasRetryChance()) {
                         // 此时 task 里的 count 已经是+1后的值了
-                        int updateCount = repository.updateNotifyTaskStatusRetry(notifyTask.getTeamId());
+                        int updateCount = repository.updateNotifyTaskStatusRetry(notifyTask);
                         if (updateCount > 0) retryCount++;
                     } else {
-                        int updateCount = repository.updateNotifyTaskStatusError(notifyTask.getTeamId());
+                        int updateCount = repository.updateNotifyTaskStatusError(notifyTask);
                         if (updateCount > 0) failCount++;
                     }
                 }
@@ -103,10 +103,10 @@ public class TradeTaskService implements ITradeTaskService {
                 try {
                     // 同样判断是否还能重试
                     if (notifyTask.hasRetryChance()) {
-                        repository.updateNotifyTaskStatusRetry(notifyTask.getTeamId());
+                        repository.updateNotifyTaskStatusRetry(notifyTask);
                         retryCount++;
                     } else {
-                        repository.updateNotifyTaskStatusError(notifyTask.getTeamId());
+                        repository.updateNotifyTaskStatusError(notifyTask);
                         failCount++;
                     }
                 } catch (Exception ex) {
