@@ -1,5 +1,6 @@
 package cn.xuele.infrastructure.adapter.repository;
 
+import cn.xuele.domain.activity.model.entity.UserGroupBuyOrderDetailEntity;
 import cn.xuele.domain.trade.adapter.repository.ITradeRepository;
 import cn.xuele.domain.trade.model.aggregate.GroupBuyLockOrderAggregate;
 import cn.xuele.domain.trade.model.aggregate.GroupBuyRefundAggregate;
@@ -52,6 +53,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 交易仓储实现类 (Infrastructure Layer)
@@ -488,6 +492,7 @@ public class TradeRepository implements ITradeRepository {
             put("teamId", tradeRefundOrderEntity.getTeamId());
             put("orderId", tradeRefundOrderEntity.getOrderId());
             put("activityId", tradeRefundOrderEntity.getActivityId());
+            put("outTradeNo", tradeRefundOrderEntity.getOutTradeNo());
         }}));
 
         notifyTaskDao.insert(notifyTask);
@@ -557,6 +562,7 @@ public class TradeRepository implements ITradeRepository {
             put("teamId", tradeRefundOrderEntity.getTeamId());
             put("orderId", tradeRefundOrderEntity.getOrderId());
             put("activityId", tradeRefundOrderEntity.getActivityId());
+            put("outTradeNo", tradeRefundOrderEntity.getOutTradeNo());
         }}));
         notifyTaskDao.insert(notifyTask);
 
@@ -624,6 +630,7 @@ public class TradeRepository implements ITradeRepository {
             put("teamId", tradeRefundOrderEntity.getTeamId());
             put("orderId", tradeRefundOrderEntity.getOrderId());
             put("activityId", tradeRefundOrderEntity.getActivityId());
+            put("outTradeNo", tradeRefundOrderEntity.getOutTradeNo());
         }}));
 
         notifyTaskDao.insert(notifyTask);
@@ -668,5 +675,54 @@ public class TradeRepository implements ITradeRepository {
         }
 
     }
+
+    @Override
+    public List<UserGroupBuyOrderDetailEntity> queryTimeoutUnpaidOrderList() {
+        List<GroupBuyOrderList> groupBuyOrderLists = groupBuyOrderListDao.queryTimeoutUnpaidOrderList();
+        if (null == groupBuyOrderLists || groupBuyOrderLists.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 获取所有teamId
+        Set<String> teamIds = groupBuyOrderLists.stream()
+                .map(GroupBuyOrderList::getTeamId)
+                .collect(Collectors.toSet());
+
+        // 查询团队信息
+        List<GroupBuyOrder> groupBuyOrders = groupBuyOrderDao.queryGroupBuyTeamByTeamIds(teamIds);
+        if (null == groupBuyOrders || groupBuyOrders.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Map<String, GroupBuyOrder> groupBuyOrderMap = groupBuyOrders.stream()
+                .collect(Collectors.toMap(GroupBuyOrder::getTeamId, order -> order));
+
+        // 转换数据
+        List<UserGroupBuyOrderDetailEntity> userGroupBuyOrderDetailEntities = new ArrayList<>();
+        for (GroupBuyOrderList groupBuyOrderList : groupBuyOrderLists) {
+            String teamId = groupBuyOrderList.getTeamId();
+            GroupBuyOrder groupBuyOrder = groupBuyOrderMap.get(teamId);
+            if (null == groupBuyOrder) continue;
+
+            UserGroupBuyOrderDetailEntity userGroupBuyOrderDetailEntity = UserGroupBuyOrderDetailEntity.builder()
+                    .userId(groupBuyOrderList.getUserId())
+                    .teamId(groupBuyOrder.getTeamId())
+                    .activityId(groupBuyOrder.getActivityId())
+                    .targetCount(groupBuyOrder.getTargetCount())
+                    .completeCount(groupBuyOrder.getCompleteCount())
+                    .lockCount(groupBuyOrder.getLockCount())
+                    .validStartTime(groupBuyOrder.getValidStartTime())
+                    .validEndTime(groupBuyOrder.getValidEndTime())
+                    .outTradeNo(groupBuyOrderList.getOutTradeNo())
+                    .source(groupBuyOrderList.getSource())
+                    .channel(groupBuyOrderList.getChannel())
+                    .build();
+
+            userGroupBuyOrderDetailEntities.add(userGroupBuyOrderDetailEntity);
+        }
+
+        return userGroupBuyOrderDetailEntities;
+    }
+
 
 }

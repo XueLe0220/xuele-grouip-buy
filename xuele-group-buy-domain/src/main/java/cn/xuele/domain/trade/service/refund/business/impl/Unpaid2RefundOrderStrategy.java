@@ -2,7 +2,7 @@ package cn.xuele.domain.trade.service.refund.business.impl;
 
 import cn.xuele.domain.trade.model.aggregate.GroupBuyRefundAggregate;
 import cn.xuele.domain.trade.model.entity.NotifyTaskEntity;
-import cn.xuele.domain.trade.model.entity.TeamRefundSuccessEvent;
+import cn.xuele.domain.trade.model.valobj.TeamRefundSuccessEvent;
 import cn.xuele.domain.trade.model.entity.TradeRefundOrderEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

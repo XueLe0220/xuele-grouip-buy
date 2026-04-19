@@ -1,5 +1,6 @@
 package cn.xuele.domain.trade.adapter.repository;
 
+import cn.xuele.domain.activity.model.entity.UserGroupBuyOrderDetailEntity;
 import cn.xuele.domain.trade.model.aggregate.GroupBuyLockOrderAggregate;
 import cn.xuele.domain.trade.model.aggregate.GroupBuyRefundAggregate;
 import cn.xuele.domain.trade.model.aggregate.GroupBuyTeamSettlementAggregate;
@@ -106,4 +107,6 @@ public interface ITradeRepository {
     NotifyTaskEntity paidFormed2Refund(GroupBuyRefundAggregate groupBuyRefundAggregate);
 
     void refund2AddRecovery(String recoveryTeamStockKey, String orderId);
+
+    List<UserGroupBuyOrderDetailEntity> queryTimeoutUnpaidOrderList();
 }

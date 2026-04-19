@@ -1,6 +1,6 @@
 package cn.xuele.domain.trade.service.refund.business;
 
-import cn.xuele.domain.trade.model.entity.TeamRefundSuccessEvent;
+import cn.xuele.domain.trade.model.valobj.TeamRefundSuccessEvent;
 import cn.xuele.domain.trade.model.entity.TradeRefundOrderEntity;
 
 /**

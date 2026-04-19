@@ -23,6 +23,7 @@
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
     </resultMap>
+
     <insert id="insert" parameterType="cn.xuele.infrastructure.dao.po.GroupBuyOrderList">
         insert into group_buy_order_list(user_id, team_id, order_id, activity_id, start_time,
                                          end_time, goods_id, source, channel, original_price, pay_price,
@@ -55,6 +56,17 @@
         where team_id = #{teamId} and status = 1
     </select>
 
+    <select id="queryTimeoutUnpaidOrderList" resultMap="dataMap">
+        select user_id, team_id, order_id, activity_id, start_time,
+               end_time, goods_id, source, channel, original_price, deduction_price,
+               pay_price, status, out_trade_no, out_trade_time, source, channel
+        from group_buy_order_list
+        where status = 0
+          and out_trade_time is null
+          and now() > end_time
+        limit 10
+    </select>
+
     <update id="updateOrderStatus2COMPLETE" parameterType="cn.xuele.infrastructure.dao.po.GroupBuyOrderList" >
         update group_buy_order_list
         set status = 1, out_trade_time = #{outTradeTime}, update_time = now()
@@ -69,6 +81,7 @@
           and order_id = #{orderId}
           and status = 0
     </update>
+
     <update id="paidUnformed2Refund" parameterType="cn.xuele.infrastructure.dao.po.GroupBuyOrderList">
         update group_buy_order_list
         set status      = 2,
@@ -77,6 +90,7 @@
           and order_id = #{orderId}
           and status = 1
     </update>
+
     <update id="paidFormed2Refund" parameterType="cn.xuele.infrastructure.dao.po.GroupBuyOrderList">
         update group_buy_order_list
         set status = 2,

@@ -1,4 +1,4 @@
-package cn.xuele.domain.trade.model.entity;
+package cn.xuele.domain.trade.model.valobj;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -42,4 +42,9 @@ public class TeamRefundSuccessEvent {
      * 预购订单ID
      */
     private String orderId;
+
+    /**
+     * 外部交易单号
+     */
+    private String outTradeNo;
 }

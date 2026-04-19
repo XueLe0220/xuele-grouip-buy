@@ -2,7 +2,7 @@ package cn.xuele.domain.trade.service.refund.business.impl;
 
 import cn.xuele.domain.trade.adapter.repository.ITradeRepository;
 import cn.xuele.domain.trade.model.entity.NotifyTaskEntity;
-import cn.xuele.domain.trade.model.entity.TeamRefundSuccessEvent;
+import cn.xuele.domain.trade.model.valobj.TeamRefundSuccessEvent;
 import cn.xuele.domain.trade.service.ITradeTaskService;
 import cn.xuele.domain.trade.service.lock.fatcory.TradeLockRuleFilterFactory;
 import cn.xuele.domain.trade.service.refund.business.IRefundOrderStrategy;

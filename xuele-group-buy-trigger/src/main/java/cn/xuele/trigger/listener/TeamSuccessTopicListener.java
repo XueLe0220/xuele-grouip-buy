@@ -1,6 +1,6 @@
 package cn.xuele.trigger.listener;
 
-import cn.xuele.domain.trade.model.entity.TeamRefundSuccessEvent;
+import cn.xuele.domain.trade.model.valobj.TeamRefundSuccessEvent;
 import cn.xuele.domain.trade.service.ITradeRefundOrderService;
 import com.alibaba.fastjson.JSON;
 import lombok.RequiredArgsConstructor;

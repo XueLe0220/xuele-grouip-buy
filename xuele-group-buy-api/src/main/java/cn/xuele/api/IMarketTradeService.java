@@ -2,6 +2,8 @@ package cn.xuele.api;
 
 import cn.xuele.api.dto.LockMarketPayOrderRequestDTO;
 import cn.xuele.api.dto.LockMarketPayOrderResponseDTO;
+import cn.xuele.api.dto.RefundMarketPayOrderRequestDTO;
+import cn.xuele.api.dto.RefundMarketPayOrderResponseDTO;
 import cn.xuele.api.dto.SettlementMarketPayOrderRequestDTO;
 import cn.xuele.api.dto.SettlementMarketPayOrderResponseDTO;
 import cn.xuele.api.response.Response;
@@ -19,19 +21,29 @@ import cn.xuele.api.response.Response;
  */
 public interface IMarketTradeService {
 
-    /**
-     * 营销拼团锁单接口
-     * <p>
-     * 场景：用户在客户端点击“立即拼单”或“去支付”时调用。
-     * 逻辑：
-     * 1. 校验活动是否有效、商品是否存在。
-     * 2. 执行锁单逻辑（占用库存/坑位）。
-     * 3. 返回订单号，前端据此唤起收银台。
-     *
-     * @param lockMarketPayOrderRequestDTO 锁单请求参数 (用户ID、活动ID、商品ID等)
-     * @return 统一响应对象，包含订单ID、实付金额、订单状态
-     */
-    Response<LockMarketPayOrderResponseDTO> lockMarketPayOrder(LockMarketPayOrderRequestDTO lockMarketPayOrderRequestDTO);
 
+    /**
+     * 营销锁单
+     *
+     * @param requestDTO 锁单商品信息
+     * @return 锁单结果信息
+     */
+    Response<LockMarketPayOrderResponseDTO> lockMarketPayOrder(LockMarketPayOrderRequestDTO requestDTO);
+
+    /**
+     * 营销结算
+     *
+     * @param requestDTO 结算商品信息
+     * @return 结算结果信息
+     */
     Response<SettlementMarketPayOrderResponseDTO> settlementMarketPayOrder( SettlementMarketPayOrderRequestDTO requestDTO);
+
+    /**
+     * 营销拼团退单
+     *
+     * @param requestDTO 退单请求信息
+     * @return 退单结果信息
+     */
+    Response<RefundMarketPayOrderResponseDTO> refundMarketPayOrder(RefundMarketPayOrderRequestDTO requestDTO);
+
 }

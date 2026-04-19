@@ -1,8 +1,11 @@
 package cn.xuele.domain.trade.service;
 
-import cn.xuele.domain.trade.model.entity.TeamRefundSuccessEvent;
+import cn.xuele.domain.activity.model.entity.UserGroupBuyOrderDetailEntity;
+import cn.xuele.domain.trade.model.valobj.TeamRefundSuccessEvent;
 import cn.xuele.domain.trade.model.entity.TradeRefundBehaviorEntity;
 import cn.xuele.domain.trade.model.entity.TradeRefundCommandEntity;
+
+import java.util.List;
 
 /**
  * 交易退单应用服务接口
@@ -32,4 +35,5 @@ public interface ITradeRefundOrderService {
      */
     void restoreTeamLockStock(TeamRefundSuccessEvent teamRefundSuccessEvent) throws Exception;
 
+    List<UserGroupBuyOrderDetailEntity> queryTimeoutUnpaidOrderList();
 }
