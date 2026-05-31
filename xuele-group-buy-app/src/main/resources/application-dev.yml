@@ -13,17 +13,17 @@ spring:
   # 1. Redis 配置
   data:
     redis:
-      host: 10.0.0.1
-      port: 16379
+      host: ${REDIS_HOST:10.0.0.1}
+      port: ${REDIS_PORT:16379}
       database: 0
       timeout: 10000ms
 
   # 2. 数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://10.0.0.1:13306/group_buy_market?useUnicode=true&characterEncoding=utf8&autoReconnect=true&failOverReadOnly=false&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: 123456
+    url: jdbc:mysql://${MYSQL_HOST:10.0.0.1}:${MYSQL_PORT:13306}/${MYSQL_DATABASE:group_buy_market}?useUnicode=true&characterEncoding=utf8&autoReconnect=true&failOverReadOnly=false&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:123456}
 
     hikari:
       pool-name: Retail_HikariCP
@@ -37,10 +37,10 @@ spring:
 
   # 3. RabbitMQ
   rabbitmq:
-    addresses: 10.0.0.1
-    port: 5672
-    username: admin
-    password: admin
+    host: ${RABBITMQ_HOST:10.0.0.1}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:admin}
+    password: ${RABBITMQ_PASSWORD:admin}
     listener:
       simple:
         prefetch: 1 # 每次投递n个消息，消费完在投递n个
@@ -100,8 +100,8 @@ logging:
 redis:
   sdk:
     config:
-      host: 10.0.0.1
-      port: 16379
+      host: ${REDIS_HOST:10.0.0.1}
+      port: ${REDIS_PORT:16379}
       poolSize: 64
       minIdleSize: 10
       idleTimeout: 10000

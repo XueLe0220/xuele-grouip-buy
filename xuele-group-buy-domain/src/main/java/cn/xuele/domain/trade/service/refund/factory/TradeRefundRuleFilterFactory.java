@@ -14,6 +14,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * 交易退单工程
@@ -22,6 +23,7 @@ import org.springframework.context.annotation.Bean;
  * @version 1.0.0
  * @since 2026/04/19 15:35
  */
+@Configuration
 public class TradeRefundRuleFilterFactory {
 
     @Bean("tradeRefundRuleFilter")

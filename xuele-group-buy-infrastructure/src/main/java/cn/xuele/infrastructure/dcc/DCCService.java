@@ -74,11 +74,10 @@ public class DCCService {
 
         try {
             // 2. 计算用户哈希 (使用绝对值防止负数)
-            // 解释：hashCode 是离散的，取模 100 可以把用户均匀分成 0-99 个桶
             int hashCode = Math.abs(userId.hashCode());
             int lastTwoDigits = hashCode % 100;
 
-            // 3. 解析配置阈值 (建议：后续优化可将 parseInt 移到更新配置时执行，避免每次请求都解)
+            // 3. 解析配置阈值
             int limit = Integer.parseInt(cutRange);
 
             // 4. 判断逻辑：

@@ -1,0 +1,16 @@
+server:
+  port: 8102
+
+spring:
+  application:
+    name: xuele-group-buy-consumer-test
+
+dubbo:
+  application:
+    name: ${spring.application.name}
+    logger: slf4j
+  registry:
+    address: ${DUBBO_REGISTRY_ADDRESS:nacos://124.221.233.121:8848}
+  consumer:
+    timeout: 3000
+    check: false

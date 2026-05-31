@@ -1,5 +1,5 @@
 spring:
-  config:
+  application:
     name: xuele-group-buy-app
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev}
