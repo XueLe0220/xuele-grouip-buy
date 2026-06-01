@@ -1,0 +1,704 @@
+# 微服务拆分学习协作手册
+
+## 1. 项目目标
+
+本项目的目标不是简单把单体项目拆成多个 Spring Boot 应用，而是通过一次接近企业真实项目的重构过程，系统学习并沉淀 Java 后端微服务架构能力。
+
+旧单体项目路径：
+
+```text
+E:\Code\Code4Java\xuele-group-buy
+```
+
+新微服务项目路径：
+
+```text
+E:\Code\Code4Java\group-buy-microservice
+```
+
+本项目需要重点沉淀：
+
+- DDD 与六边形架构
+- 微服务服务边界拆分
+- Dubbo RPC 调用
+- Nacos 注册中心与配置中心
+- Redis 缓存与库存控制
+- MySQL 数据归属与表边界
+- MQ 异步解耦与最终一致性
+- 分布式锁与任务抢占
+- 定时任务拆分
+- 服务治理、配置治理、部署运维
+- 项目文档与面试表达
+
+核心标准：
+
+```text
+能跑通功能只是最低要求。
+更重要的是能讲清楚为什么这样拆、为什么这样设计、解决了什么问题、还有什么风险。
+```
+
+## 2. 总体项目规划
+
+新项目采用“按业务能力纵向拆分”的方式组织，每个业务服务都是独立工程，服务内部继续保持 DDD / 六边形结构。
+
+当前规划：
+
+```text
+group-buy-microservice/
+  group-buy-common/
+    group-buy-common-types/
+    后续可能扩展：
+      group-buy-common-starter-web/
+      group-buy-common-starter-dubbo/
+      group-buy-common-starter-redis/
+
+  group-buy-tag-service/
+    group-buy-tag-api/
+    group-buy-tag-domain/
+    group-buy-tag-infrastructure/
+    group-buy-tag-trigger/
+    group-buy-tag-app/
+
+  后续继续拆分：
+    group-buy-activity-service/
+    group-buy-trade-service/
+    group-buy-settlement-service/
+    group-buy-job-service/
+```
+
+### 2.1 common 工程定位
+
+`group-buy-common` 不是微服务，不启动，不注册 Nacos，也没有端口。
+
+它是公共基础 jar 工程，用于沉淀跨服务稳定复用的基础能力。
+
+当前只做：
+
+```text
+group-buy-common-types
+```
+
+允许放入：
+
+- `Response<T>`
+- `ResponseCode`
+- `AppException`
+- `Constants`
+- 后续可能加入 `PageRequest`、`PageResponse`
+
+禁止放入：
+
+- Tag 业务模型
+- Activity 业务模型
+- Trade 业务模型
+- MyBatis / Redis / Dubbo / Nacos 配置
+- 只服务某个业务的工具类
+
+原则：
+
+```text
+common-types 是公共基础类型库，不是公共垃圾桶。
+```
+
+### 2.2 单个业务服务内部结构
+
+以 `group-buy-tag-service` 为例：
+
+```text
+group-buy-tag-service/
+  group-buy-tag-api/
+  group-buy-tag-domain/
+  group-buy-tag-infrastructure/
+  group-buy-tag-trigger/
+  group-buy-tag-app/
+```
+
+职责说明：
+
+| 模块 | 职责 |
+| --- | --- |
+| `api` | 对外契约，放 Dubbo 接口、请求 DTO、响应 DTO |
+| `domain` | 领域模型、领域服务、仓储接口、业务规则 |
+| `infrastructure` | MySQL、Redis、MQ、外部服务访问、仓储实现 |
+| `trigger` | 入站适配器，HTTP、Dubbo Provider、Job、MQ Listener |
+| `app` | 启动装配层，Spring Boot 启动类和运行配置 |
+
+推荐依赖方向：
+
+```text
+app -> trigger + infrastructure
+trigger -> api + domain
+infrastructure -> domain + common-types
+domain -> common-types
+api -> common-types
+```
+
+禁止依赖方向：
+
+```text
+domain -> infrastructure
+domain -> trigger
+domain -> Dubbo / MyBatis / Redis / Spring Web / Nacos
+api -> domain / infrastructure / trigger
+```
+
+## 3. 学习协作规则
+
+### 3.1 基本协作方式
+
+本项目采用“用户主导实践，AI 导师审查引导”的方式推进。
+
+要求：
+
+1. 每一步先讲为什么，再讲怎么做，最后讲怎么验证。
+2. 不直接一次性生成大量完整代码，除非用户明确要求。
+3. 用户先动手实践，AI 负责检查、解释、纠偏和给出下一步小任务。
+4. 如果用户卡住较久，AI 可以提供更具体的代码示例。
+5. 每次只推进一个小阶段，不一次性展开过多内容。
+6. 如果设计不合理，AI 要直接指出，并说明更好的方案。
+7. 项目标准按企业级要求执行，不按简单学习 Demo 标准执行。
+
+### 3.2 检查代码和结构时的规则
+
+AI 检查项目前，需要先说明：
+
+- 要看哪些文件
+- 为什么要看这些文件
+- 本次检查目标是什么
+
+检查后输出顺序：
+
+1. 结论
+2. 发现的问题
+3. 为什么是问题
+4. 下一步任务
+5. 验证方式
+
+### 3.3 每阶段验收规则
+
+每个阶段都必须有明确验收标准。
+
+常见验收方式：
+
+- `mvn clean compile`
+- `mvn clean install`
+- 服务可启动
+- Nacos 可看到服务注册
+- Dubbo RPC 可调用
+- 接口可通过 HTTP 测试
+- MySQL / Redis / MQ 状态可验证
+- 代码依赖方向符合六边形架构
+
+### 3.4 每阶段文档沉淀
+
+每个阶段完成后，需要沉淀：
+
+- 本阶段目标
+- 改造前问题
+- 改造后结构
+- 关键设计决策
+- 技术选型理由
+- 踩坑记录
+- 面试表达
+- 遗留风险
+- 下一阶段计划
+
+## 4. 六边形架构约束
+
+六边形架构关注的是依赖方向，而不是单纯的目录名称。
+
+核心原则：
+
+```text
+领域层表达业务规则。
+外部技术通过适配器接入。
+依赖方向永远指向领域核心。
+```
+
+### 4.1 domain 层允许做什么
+
+允许：
+
+- 定义领域实体
+- 定义值对象
+- 定义领域服务
+- 定义仓储接口
+- 编排业务规则
+- 抛出业务异常
+
+不允许：
+
+- 直接使用 MyBatis Mapper
+- 直接使用 Redis / Redisson
+- 直接使用 Dubbo 注解
+- 直接使用 Spring MVC Controller
+- 直接依赖 PO、DAO、RPC Client 实现
+
+### 4.2 infrastructure 层职责
+
+负责实现领域层定义的端口：
+
+- DAO / Mapper
+- PO
+- MyBatis XML
+- Redis 读写
+- MQ 发送
+- 外部 RPC 调用
+- 仓储实现
+
+### 4.3 trigger 层职责
+
+负责接收外部输入：
+
+- HTTP Controller
+- Dubbo Provider
+- MQ Listener
+- 定时任务入口
+- 命令行任务入口
+
+### 4.4 app 层职责
+
+负责启动和装配：
+
+- Spring Boot 启动类
+- `application.yml`
+- 日志配置
+- 服务端口配置
+- 启动依赖聚合
+
+app 层不写业务逻辑。
+
+## 5. 微服务拆分原则
+
+### 5.1 服务自治
+
+每个微服务都应该拥有清晰的业务边界：
+
+- 自己的业务模型
+- 自己的数据归属
+- 自己的缓存归属
+- 自己的启动入口
+- 自己的配置
+- 自己的部署边界
+
+### 5.2 数据归属
+
+拆分服务时必须回答：
+
+- 哪个服务拥有这张表？
+- 哪个服务可以直接读写这张表？
+- 其他服务如何访问这份数据？
+- 是否通过 RPC？
+- 是否通过事件同步？
+
+例如 tag 服务：
+
+```text
+crowd_tags
+crowd_tags_detail
+crowd_tags_job
+```
+
+这些表应该归 `group-buy-tag-service` 所有。
+
+其他服务不能直接访问这些表，只能通过 `group-buy-tag-api` 暴露的 RPC 契约访问标签能力。
+
+### 5.3 缓存归属
+
+缓存也要有明确归属。
+
+例如标签 bitmap：
+
+```text
+crowd:tag:bitmap:{tagId}
+```
+
+应该由 tag 服务维护。
+
+activity / trade 等服务不能直接读写该 bitmap，只能通过 tag-service 查询用户是否命中标签。
+
+### 5.4 RPC 契约
+
+服务之间通过 API 契约通信。
+
+原则：
+
+- 消费方只依赖 provider 的 `api` jar
+- 不依赖 provider 的 domain / infrastructure / app
+- DTO 必须稳定、可序列化
+- 接口需要考虑版本号、超时、异常语义
+
+## 6. 技术选型表达要求
+
+每引入一个技术组件，都必须能回答：
+
+1. 为什么需要它？
+2. 它解决了什么问题？
+3. 不用它会怎样？
+4. 它有什么风险？
+5. 它在本项目中的边界是什么？
+6. 面试时怎么讲？
+
+示例：
+
+### 6.1 Dubbo
+
+使用原因：
+
+- 内部服务之间需要高性能 RPC
+- 契约清晰，适合 Java 服务间通信
+- 支持服务治理能力，如超时、重试、负载均衡、版本分组
+
+边界：
+
+- Dubbo 注解只允许出现在 trigger 或 infrastructure 适配层
+- domain 不感知 Dubbo
+
+### 6.2 Nacos
+
+使用原因：
+
+- 服务注册发现
+- 后续可承载配置中心能力
+
+边界：
+
+- 服务启动时向 Nacos 注册
+- 消费方通过 Nacos 发现 provider
+- 业务代码不直接依赖 Nacos API
+
+### 6.3 Redis
+
+使用原因：
+
+- 高性能缓存
+- bitmap 支持大规模标签命中判断
+- 库存预占等高并发场景
+
+边界：
+
+- Redis key 要有清晰业务归属
+- 不能多个服务随意读写同一类 key
+
+### 6.4 Zookeeper
+
+计划用途：
+
+- 分布式锁
+- 任务抢占
+- 对比 Redis 锁与 Zookeeper 锁的差异
+
+引入前必须说明：
+
+- 具体解决哪个场景
+- 为什么不用 Redis 锁
+- 锁失败、超时、节点断开时怎么处理
+
+## 7. 项目拆分阶段路线
+
+### 阶段 0：整体规划
+
+目标：
+
+- 梳理单体结构
+- 确定服务拆分顺序
+- 确定技术选型
+- 确定新项目目录结构
+
+### 阶段 1：group-buy-common
+
+目标：
+
+- 搭建公共基础 jar
+- 完成 `group-buy-common-types`
+- 只放稳定公共类型
+
+验收：
+
+```text
+group-buy-common 可 mvn clean install
+group-buy-common-types 无 Spring / MyBatis / Redis 等框架污染
+```
+
+### 阶段 2：group-buy-tag-service 骨架
+
+目标：
+
+- 搭建 tag 服务内部五层模块
+- 确认 Maven 依赖方向
+- 确认六边形结构
+
+### 阶段 3：tag-service 真实迁移
+
+目标：
+
+- 迁移标签领域模型
+- 迁移标签 DAO / PO / MyBatis XML
+- 迁移 Redis bitmap 读写
+- 提供 Dubbo 标签查询接口
+
+### 阶段 4：主链路改造
+
+目标：
+
+- activity / trade 不再直接访问标签表
+- activity / trade 不再直接访问标签 bitmap
+- 通过 Dubbo 调用 tag-service
+
+### 阶段 5：activity-service 拆分
+
+目标：
+
+- 活动配置
+- 营销试算
+- 活动规则树
+- 活动缓存
+
+### 阶段 6：trade-service 拆分
+
+目标：
+
+- 锁单
+- 结算
+- 退单
+- 订单状态机
+- 库存一致性
+
+### 阶段 7：异步任务与 MQ 拆分
+
+目标：
+
+- 结算通知
+- 退单通知
+- 补偿任务
+- 消息可靠性
+- 消费幂等
+
+### 阶段 8：分布式锁和一致性
+
+目标：
+
+- 引入 Zookeeper 或对比 Redis / Zookeeper 锁
+- 处理任务抢占
+- 处理并发锁单
+- 处理库存恢复
+
+### 阶段 9：配置中心与服务治理
+
+目标：
+
+- Nacos 配置中心
+- 环境隔离
+- 超时
+- 重试
+- 降级
+- 健康检查
+
+### 阶段 10：部署与可观测性
+
+目标：
+
+- Docker Compose
+- 云服务器部署
+- 日志规范
+- Actuator 健康检查
+- 指标监控
+- 链路追踪
+
+### 阶段 11：文档与面试表达
+
+目标：
+
+- 架构图
+- 核心链路图
+- 简历亮点
+- 面试问答
+- 踩坑复盘
+
+## 8. 新对话固定提示词模板
+
+每次新开对话，先复制下面这段。它包含项目总背景、协作规则和当前进度快照。
+
+```text
+你是我的 Java 后端微服务架构导师和项目协作伙伴。
+
+我正在把一个 Java 学习项目改造成企业级分布式微服务项目，用于秋招简历和面试。这个项目不是单纯跑通功能，而是要通过真实重构过程学习并沉淀：DDD、六边形架构、微服务拆分、Dubbo、Nacos、Redis、MySQL、MQ、分布式锁、任务调度、服务治理、配置治理、可观测性、部署运维、面试表达。
+
+旧单体项目路径：
+E:\Code\Code4Java\xuele-group-buy
+
+新微服务项目路径：
+E:\Code\Code4Java\group-buy-microservice
+
+我的核心要求：
+1. 请以教学和引导为主，不要直接替我写完所有代码。
+2. 每一步都要先讲为什么，再讲我该怎么做，最后讲怎么验证。
+3. 除非我明确要求你直接修改代码，或者我卡住很久，否则不要直接给我大段完整代码。
+4. 你可以检查我的项目结构、pom、配置、代码，但检查前请说明你要看什么、为什么看。
+5. 检查后先给结论，再给问题，再给下一步任务。
+6. 每次只推进一个小阶段，不要一次性展开太多。
+7. 要按企业级标准要求我，而不是学习 Demo 标准。
+8. 如果我设计不合理，你要直接指出，并解释更好的方案。
+9. 如果涉及六边形架构，要重点检查依赖方向：domain 不能依赖 Dubbo、MyBatis、Redis、Spring Web、Nacos 等外部技术。
+10. 如果涉及微服务拆分，要重点检查服务边界、数据归属、缓存归属、RPC 契约、故障边界、部署边界。
+11. 每个阶段结束时，要帮我总结：我做了什么、为什么这么做、面试怎么讲、还有什么风险。
+12. 回答使用中文，风格像老师带学生做真实企业项目。
+
+当前项目总体规划：
+group-buy-microservice/
+  group-buy-common/
+    group-buy-common-types/
+    后续可能扩展：
+      group-buy-common-starter-web/
+      group-buy-common-starter-dubbo/
+      group-buy-common-starter-redis/
+
+  group-buy-tag-service/
+    group-buy-tag-api/
+    group-buy-tag-domain/
+    group-buy-tag-infrastructure/
+    group-buy-tag-trigger/
+    group-buy-tag-app/
+
+  后续继续拆：
+    group-buy-activity-service/
+    group-buy-trade-service/
+    group-buy-settlement-service/
+    group-buy-job-service/ 或独立任务调度模块
+
+截至 2026-06-01 的当前进度：
+1. 已经完成整体方向选择：从旧单体项目迁移到新的独立微服务项目目录。
+2. 已经确定微服务拆分方式：按业务能力纵向拆分，每个业务服务独立工程，服务内部继续保持 DDD / 六边形架构。
+3. 已经确定第一个拆分服务是 group-buy-tag-service。
+4. 已经确定先做最小公共基础库 group-buy-common，而不是直接迁移 tag-service。
+5. 阶段 1：group-buy-common 的代码与构建验收已经完成。
+6. group-buy-common 当前只包含 group-buy-common-types，不先扩展 starter。
+7. group-buy-common-types 已补齐 Constants、ResponseCode、AppException、Response<T>。
+8. group-buy-common-types 不依赖 Spring Boot、MyBatis、Redis、Dubbo、Nacos、Lombok，也不放 Tag、Activity、Trade 等业务模型。
+9. 已执行 mvn clean install，group-buy-common-types 可以作为 jar 被其他服务依赖。
+10. 阶段 1 的复盘文档暂未沉淀，计划与阶段 2 开始时一起补。
+11. 当前准备进入阶段 2：group-buy-tag-service 骨架检查与依赖方向整理。
+
+当前最近一次任务：
+进入阶段 2 前，先完成阶段 1 简短复盘，然后检查 group-buy-tag-service 骨架，包括：
+1. 检查 group-buy-tag-service 父 pom 和五个子模块是否完整。
+2. 检查 group-buy-tag-api、group-buy-tag-domain、group-buy-tag-infrastructure、group-buy-tag-trigger、group-buy-tag-app 的 Maven 依赖方向。
+3. 确认 domain 不依赖 Dubbo、MyBatis、Redis、Spring Web、Nacos 等外部技术。
+4. 确认 api 只放对外契约，不依赖 domain / infrastructure / trigger。
+5. 确认 app 只负责启动和装配，不写业务逻辑。
+6. 清点脚手架遗留内容，例如 xxx / yyy 包、frame_case_mapper.xml、本地 Response 等。
+7. 规划 group-buy-tag-service 如何依赖 group-buy-common-types。
+8. 暂不迁移标签真实业务代码，先把服务骨架和依赖边界整理正确。
+
+请你根据我接下来给出的当前阶段，带我一步一步完成。请先检查，再引导，不要直接替我完成所有代码。
+```
+
+## 9. 当前阶段新对话模板
+
+固定提示词后，再复制下面这段。这里已经写入我们当前进行到的位置。
+
+```text
+【当前阶段】
+我现在要做：进入阶段 2：group-buy-tag-service 骨架，重点是检查并整理 tag 服务的五层模块、Maven 依赖方向和六边形架构边界。
+
+【我已经完成】
+1. 我已经创建了新微服务项目目录：
+   E:\Code\Code4Java\group-buy-microservice
+
+2. 我已经完成公共工程的代码与构建验收：
+   group-buy-common/
+     group-buy-common-types/
+
+3. group-buy-common-types 当前包含这些稳定公共类型：
+   Constants
+   ResponseCode
+   AppException
+   Response<T>
+
+4. group-buy-common-types 已确认不依赖 Spring Boot、MyBatis、Redis、Dubbo、Nacos、Lombok 等框架。
+
+5. 我已经执行过：
+   cd E:\Code\Code4Java\group-buy-microservice\group-buy-common
+   mvn clean install
+
+6. 阶段 1 的代码验收已通过，但阶段复盘文档还没有沉淀，计划和阶段 2 一起做。
+
+7. 当前还没有正式迁移 tag-service 的真实业务代码。
+
+8. group-buy-tag-service 当前已有五个模块骨架：
+   group-buy-tag-api/
+   group-buy-tag-domain/
+   group-buy-tag-infrastructure/
+   group-buy-tag-trigger/
+   group-buy-tag-app/
+
+9. tag-service 目前疑似仍有脚手架遗留内容，例如 xxx / yyy 包、frame_case_mapper.xml、本地 Response 等，需要先检查再决定如何清理。
+
+【我当前需要完成的事情】
+1. 先帮我做阶段 1：group-buy-common 的简短复盘。
+2. 检查 group-buy-tag-service 的父 pom 和五个子模块 pom。
+3. 检查 api、domain、infrastructure、trigger、app 的依赖方向是否符合六边形架构。
+4. 检查 domain 是否错误依赖 Dubbo、MyBatis、Redis、Spring Web、Nacos 等外部技术。
+5. 检查 api 是否只放对外契约，是否需要移除本地 Response 并改用 common-types 的 Response<T>。
+6. 检查 app 是否只做启动和配置装配，是否混入业务逻辑。
+7. 清点脚手架遗留内容，给出清理顺序。
+8. 给我下一步小任务：先整理 pom 和模块依赖，不要直接迁移真实标签业务代码。
+
+【我遇到的问题】
+我不确定 tag-service 的五层模块依赖应该怎么写，也不确定哪些依赖应该放父工程、哪些应该只放到具体模块。
+我也不确定脚手架遗留内容应该一次删掉，还是等迁移真实业务代码时逐步替换。
+
+【我的要求】
+请你先不要直接写完整代码。
+请你先说明要检查哪些文件、为什么检查、检查目标是什么。
+检查后请先给结论，再指出问题，然后给我下一步小任务。
+每一步请先讲为什么，再讲我该怎么做，最后讲怎么验证。
+```
+
+## 10. 每阶段复盘模板
+
+每个阶段完成后，可以要求 AI 按下面格式复盘。
+
+```text
+请帮我做本阶段复盘，格式如下：
+
+1. 本阶段完成了什么
+2. 原来有什么问题
+3. 我们为什么这样设计
+4. 涉及哪些技术点
+5. 企业级体现在哪里
+6. 面试官可能怎么问
+7. 我应该怎么回答
+8. 当前还遗留什么风险
+9. 下一阶段应该做什么
+```
+
+## 11. 面试表达总原则
+
+面试中不要只说“我用了什么技术”，而要说清楚：
+
+```text
+原来有什么问题
+为什么这个问题需要解决
+我做了什么设计
+我为什么这样选型
+改造后带来了什么收益
+过程中踩了什么坑
+还有什么可优化点
+```
+
+推荐表达结构：
+
+```text
+背景 -> 问题 -> 方案 -> 落地 -> 验证 -> 风险 -> 后续优化
+```
+
+示例：
+
+```text
+原项目是一个按技术层拆分的单体 DDD 项目，适合学习领域建模，但随着业务复杂度上升，标签、活动、交易、结算等领域边界开始混在一起。
+
+我在微服务改造中采用按业务能力纵向拆分的方式，每个服务独立工程，内部继续保持六边形架构。服务之间只通过 api 契约和 Dubbo 通信，不共享数据库访问层和领域实现。
+
+以 tag-service 为例，crowd_tags 相关表和标签 bitmap 都归标签服务所有，activity-service 只保存 tagId，需要判断用户是否命中标签时，通过 Dubbo 调用 tag-service，而不是直接访问标签表或 Redis bitmap。
+```
