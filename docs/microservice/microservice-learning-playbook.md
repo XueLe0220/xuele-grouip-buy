@@ -16,6 +16,30 @@ E:\Code\Code4Java\xuele-group-buy
 E:\Code\Code4Java\group-buy-microservice
 ```
 
+当前存在公司环境与家环境两套路径。
+
+公司环境路径：
+
+```text
+旧单体项目路径：D:\Code4J\xuele-group-buy
+新微服务项目路径：D:\Code4J\group-buy-microservice
+```
+
+家环境路径：
+
+```text
+旧单体项目路径：E:\Code\Code4Java\xuele-group-buy
+新微服务项目路径：E:\Code\Code4Java\group-buy-microservice
+```
+
+路径确认规则：
+
+```text
+每次新对话开始时，如果本次任务需要读取、检查、修改项目文件，或者需要执行命令，但用户没有明确说明当前使用公司路径还是家路径，AI 必须先询问：当前使用公司路径还是家路径？
+
+在路径不确定时，禁止自行假设项目目录，禁止直接使用旧路径执行检查或修改。
+```
+
 本项目需要重点沉淀：
 
 - DDD 与六边形架构
@@ -530,6 +554,18 @@ E:\Code\Code4Java\xuele-group-buy
 新微服务项目路径：
 E:\Code\Code4Java\group-buy-microservice
 
+公司环境路径：
+旧单体项目路径：D:\Code4J\xuele-group-buy
+新微服务项目路径：D:\Code4J\group-buy-microservice
+
+家环境路径：
+旧单体项目路径：E:\Code\Code4Java\xuele-group-buy
+新微服务项目路径：E:\Code\Code4Java\group-buy-microservice
+
+路径确认要求：
+每次新对话开始时，如果我没有明确说明当前是公司环境还是家环境，而你需要读取、检查、修改项目文件，或者需要执行命令，你必须先问我：当前使用公司路径还是家路径？
+在路径不确定时，不允许自行假设项目目录，也不允许直接使用某个默认路径继续操作。
+
 我的核心要求：
 1. 请以教学和引导为主，不要直接替我写完所有代码。
 2. 每一步都要先讲为什么，再讲我该怎么做，最后讲怎么验证。
@@ -603,7 +639,8 @@ group-buy-microservice/
 
 【我已经完成】
 1. 我已经创建了新微服务项目目录：
-   E:\Code\Code4Java\group-buy-microservice
+   公司环境：D:\Code4J\group-buy-microservice
+   家环境：E:\Code\Code4Java\group-buy-microservice
 
 2. 我已经完成公共工程的代码与构建验收：
    group-buy-common/
@@ -618,6 +655,10 @@ group-buy-microservice/
 4. group-buy-common-types 已确认不依赖 Spring Boot、MyBatis、Redis、Dubbo、Nacos、Lombok 等框架。
 
 5. 我已经执行过：
+   公司环境：
+   cd D:\Code4J\group-buy-microservice\group-buy-common
+
+   家环境：
    cd E:\Code\Code4Java\group-buy-microservice\group-buy-common
    mvn clean install
 
@@ -649,6 +690,7 @@ group-buy-microservice/
 我也不确定脚手架遗留内容应该一次删掉，还是等迁移真实业务代码时逐步替换。
 
 【我的要求】
+如果我在新对话里没有明确说明当前是公司环境还是家环境，而你需要读取、检查、修改项目文件，或者需要执行命令，请必须先问我当前使用公司路径还是家路径，不要自行假设路径。
 请你先不要直接写完整代码。
 请你先说明要检查哪些文件、为什么检查、检查目标是什么。
 检查后请先给结论，再指出问题，然后给我下一步小任务。
