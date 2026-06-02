@@ -202,6 +202,14 @@ AI 检查项目前，需要先说明：
 
 每个阶段都必须有明确验收标准。
 
+环境验收分工规则：
+
+```text
+如果当前是公司环境，AI 只做结构、代码、配置、依赖方向等文件级验收，不主动执行 Maven 编译、服务启动等构建命令。编译结果由用户在公司环境自行执行后反馈。
+
+如果当前是家环境，AI 可以执行 Maven 编译、安装、服务启动等命令，并把命令结果纳入验收结论。
+```
+
 常见验收方式：
 
 - `mvn clean compile`
@@ -226,6 +234,16 @@ AI 检查项目前，需要先说明：
 - 面试表达
 - 遗留风险
 - 下一阶段计划
+
+阶段切换规则：
+
+```text
+每完成一个阶段，必须先完成阶段复盘文档，再进入下一阶段。
+
+阶段复盘文档完成后，新的阶段必须开启新对话推进，避免上下文混杂。
+
+如果用户提醒“阶段是否完成”或“需要复盘”，AI 必须先收口当前阶段，不继续推进新阶段任务。
+```
 
 ## 4. 六边形架构约束
 
@@ -566,6 +584,10 @@ E:\Code\Code4Java\group-buy-microservice
 每次新对话开始时，如果我没有明确说明当前是公司环境还是家环境，而你需要读取、检查、修改项目文件，或者需要执行命令，你必须先问我：当前使用公司路径还是家路径？
 在路径不确定时，不允许自行假设项目目录，也不允许直接使用某个默认路径继续操作。
 
+编译验收分工要求：
+如果当前是公司环境，你只做结构、代码、配置、依赖方向等文件级验收，不主动执行 Maven 编译、服务启动等构建命令，编译由我自己执行后反馈。
+如果当前是家环境，你可以执行 Maven 编译、安装、服务启动等命令，并把命令结果纳入验收结论。
+
 我的核心要求：
 1. 请以教学和引导为主，不要直接替我写完所有代码。
 2. 每一步都要先讲为什么，再讲我该怎么做，最后讲怎么验证。
@@ -602,29 +624,33 @@ group-buy-microservice/
     group-buy-settlement-service/
     group-buy-job-service/ 或独立任务调度模块
 
-截至 2026-06-01 的当前进度：
+截至 2026-06-02 的当前进度：
 1. 已经完成整体方向选择：从旧单体项目迁移到新的独立微服务项目目录。
 2. 已经确定微服务拆分方式：按业务能力纵向拆分，每个业务服务独立工程，服务内部继续保持 DDD / 六边形架构。
 3. 已经确定第一个拆分服务是 group-buy-tag-service。
 4. 已经确定先做最小公共基础库 group-buy-common，而不是直接迁移 tag-service。
-5. 阶段 1：group-buy-common 的代码与构建验收已经完成。
+5. 阶段 1：group-buy-common 的代码与构建验收已经完成，并已沉淀复盘文档：docs/microservice/04-stage-1-common-review.md。
 6. group-buy-common 当前只包含 group-buy-common-types，不先扩展 starter。
 7. group-buy-common-types 已补齐 Constants、ResponseCode、AppException、Response<T>。
 8. group-buy-common-types 不依赖 Spring Boot、MyBatis、Redis、Dubbo、Nacos、Lombok，也不放 Tag、Activity、Trade 等业务模型。
 9. 已执行 mvn clean install，group-buy-common-types 可以作为 jar 被其他服务依赖。
-10. 阶段 1 的复盘文档暂未沉淀，计划与阶段 2 开始时一起补。
-11. 当前准备进入阶段 2：group-buy-tag-service 骨架检查与依赖方向整理。
+10. 阶段 2：group-buy-tag-service 骨架和 Maven 依赖方向已经完成核心验收，并已沉淀复盘文档：docs/microservice/05-stage-2-tag-service-skeleton-review.md。
+11. group-buy-tag-service 已具备五层模块：api、domain、infrastructure、trigger、app。
+12. 当前 Maven 依赖方向已整理为：api -> common-types，domain -> common-types，infrastructure -> domain，trigger -> api + domain，app -> trigger + infrastructure。
+13. 已确认 domain 不依赖 Dubbo、MyBatis、Redis、Spring Web、Nacos 等外部技术。
+14. 已清理本地 Response<T>、xxx / yyy 脚手架领域目录、frame_case_mapper.xml 等明显模板遗留。
+15. application-dev.yml 已指向 group_buy_tag；MySQL 初始化脚本已放在旧单体项目 docs/microservice/sql/01-init-group-buy-tag.sql。
+16. MySQL Docker 初始化脚本曾遇到中文编码问题，已确认应保持 UTF-8 上传，并通过重新执行 SQL 解决。
+17. 公司环境规则已经固定：AI 只做结构、代码、配置、依赖方向等文件级验收，不主动执行 Maven 编译；编译由用户执行后反馈。家环境下 AI 可以编译验收。
+18. 当前准备进入阶段 3：tag-service 真实迁移。阶段 3 必须在新对话中开启。
 
 当前最近一次任务：
-进入阶段 2 前，先完成阶段 1 简短复盘，然后检查 group-buy-tag-service 骨架，包括：
-1. 检查 group-buy-tag-service 父 pom 和五个子模块是否完整。
-2. 检查 group-buy-tag-api、group-buy-tag-domain、group-buy-tag-infrastructure、group-buy-tag-trigger、group-buy-tag-app 的 Maven 依赖方向。
-3. 确认 domain 不依赖 Dubbo、MyBatis、Redis、Spring Web、Nacos 等外部技术。
-4. 确认 api 只放对外契约，不依赖 domain / infrastructure / trigger。
-5. 确认 app 只负责启动和装配，不写业务逻辑。
-6. 清点脚手架遗留内容，例如 xxx / yyy 包、frame_case_mapper.xml、本地 Response 等。
-7. 规划 group-buy-tag-service 如何依赖 group-buy-common-types。
-8. 暂不迁移标签真实业务代码，先把服务骨架和依赖边界整理正确。
+进入阶段 3 前，先做 tag-service 真实迁移的代码盘点和迁移清单设计，包括：
+1. 从旧单体项目中盘点 tag 相关代码、配置、Mapper XML、SQL、Redis bitmap 逻辑、HTTP/Job 入口。
+2. 按 api、domain、infrastructure、trigger、app 五层模块给每个类和资源设计归属。
+3. 明确哪些内容先迁移，哪些内容暂缓，哪些模板/历史代码不迁移。
+4. 重点防止 MyBatis、Redis、Dubbo、Spring Web、Nacos 等外部技术进入 domain。
+5. 先输出迁移清单和落位方案，不直接批量复制真实业务代码。
 
 请你根据我接下来给出的当前阶段，带我一步一步完成。请先检查，再引导，不要直接替我完成所有代码。
 ```
@@ -635,7 +661,7 @@ group-buy-microservice/
 
 ```text
 【当前阶段】
-我现在要做：进入阶段 2：group-buy-tag-service 骨架，重点是检查并整理 tag 服务的五层模块、Maven 依赖方向和六边形架构边界。
+我现在要做：进入阶段 3：tag-service 真实迁移。第一步不是直接复制代码，而是先从旧单体项目中盘点 tag 相关代码和资源，设计迁移清单与五层模块落位方案。
 
 【我已经完成】
 1. 我已经创建了新微服务项目目录：
@@ -654,43 +680,59 @@ group-buy-microservice/
 
 4. group-buy-common-types 已确认不依赖 Spring Boot、MyBatis、Redis、Dubbo、Nacos、Lombok 等框架。
 
-5. 我已经执行过：
-   公司环境：
-   cd D:\Code4J\group-buy-microservice\group-buy-common
+5. 阶段 1 已完成复盘文档：
+   docs/microservice/04-stage-1-common-review.md
 
-   家环境：
-   cd E:\Code\Code4Java\group-buy-microservice\group-buy-common
-   mvn clean install
+6. 阶段 2：group-buy-tag-service 骨架已经完成核心验收，并已完成复盘文档：
+   docs/microservice/05-stage-2-tag-service-skeleton-review.md
 
-6. 阶段 1 的代码验收已通过，但阶段复盘文档还没有沉淀，计划和阶段 2 一起做。
-
-7. 当前还没有正式迁移 tag-service 的真实业务代码。
-
-8. group-buy-tag-service 当前已有五个模块骨架：
+7. group-buy-tag-service 当前已有五个模块骨架：
    group-buy-tag-api/
    group-buy-tag-domain/
    group-buy-tag-infrastructure/
    group-buy-tag-trigger/
    group-buy-tag-app/
 
-9. tag-service 目前疑似仍有脚手架遗留内容，例如 xxx / yyy 包、frame_case_mapper.xml、本地 Response 等，需要先检查再决定如何清理。
+8. group-buy-tag-service 当前 Maven 依赖方向已经整理为：
+   group-buy-tag-api -> group-buy-common-types
+   group-buy-tag-domain -> group-buy-common-types
+   group-buy-tag-infrastructure -> group-buy-tag-domain
+   group-buy-tag-trigger -> group-buy-tag-api + group-buy-tag-domain
+   group-buy-tag-app -> group-buy-tag-trigger + group-buy-tag-infrastructure
+
+9. 已确认 domain 不依赖 Dubbo、MyBatis、Redis、Spring Web、Nacos 等外部技术。
+
+10. 已清理本地 Response<T>、xxx / yyy 脚手架领域目录、frame_case_mapper.xml 等明显模板遗留。
+
+11. application-dev.yml 已指向 group_buy_tag；MySQL 初始化脚本在：
+    docs/microservice/sql/01-init-group-buy-tag.sql
+
+12. MySQL Docker 初始化脚本曾遇到中文编码问题，已确认 SQL 文件需要保持 UTF-8 上传，并已经重新执行 SQL 解决。
+
+13. 当前还没有正式迁移 tag-service 的真实业务代码。
 
 【我当前需要完成的事情】
-1. 先帮我做阶段 1：group-buy-common 的简短复盘。
-2. 检查 group-buy-tag-service 的父 pom 和五个子模块 pom。
-3. 检查 api、domain、infrastructure、trigger、app 的依赖方向是否符合六边形架构。
-4. 检查 domain 是否错误依赖 Dubbo、MyBatis、Redis、Spring Web、Nacos 等外部技术。
-5. 检查 api 是否只放对外契约，是否需要移除本地 Response 并改用 common-types 的 Response<T>。
-6. 检查 app 是否只做启动和配置装配，是否混入业务逻辑。
-7. 清点脚手架遗留内容，给出清理顺序。
-8. 给我下一步小任务：先整理 pom 和模块依赖，不要直接迁移真实标签业务代码。
+1. 请先检查旧单体项目中 tag 相关代码和资源分布。
+2. 请说明你要看哪些文件、为什么看、本次检查目标是什么。
+3. 请重点盘点：
+   - 标签领域模型、领域服务、仓储接口
+   - DAO / Mapper / PO / MyBatis XML
+   - Redis bitmap key、生成逻辑、查询逻辑
+   - HTTP Controller、Job、MQ Listener、RPC 候选入口
+   - 与 Activity / Trade 主链路耦合的标签调用点
+4. 请把盘点结果整理成迁移清单，标明每个类或资源应该进入 api、domain、infrastructure、trigger、app 哪个模块。
+5. 请指出哪些代码可以迁移，哪些需要改造后迁移，哪些不应该迁移。
+6. 请先不要直接批量复制真实业务代码。
+7. 请给我下一步小任务：先完成迁移清单和落位方案，再开始小步迁移。
 
 【我遇到的问题】
-我不确定 tag-service 的五层模块依赖应该怎么写，也不确定哪些依赖应该放父工程、哪些应该只放到具体模块。
-我也不确定脚手架遗留内容应该一次删掉，还是等迁移真实业务代码时逐步替换。
+我不确定旧单体里哪些代码真正属于 tag-service，也不确定这些代码迁移到微服务后应该分别放在 api、domain、infrastructure、trigger、app 哪一层。
+我也担心直接复制旧代码会把 MyBatis、Redis、Spring Web、Dubbo 等外部技术带进 domain，破坏六边形架构边界。
 
 【我的要求】
 如果我在新对话里没有明确说明当前是公司环境还是家环境，而你需要读取、检查、修改项目文件，或者需要执行命令，请必须先问我当前使用公司路径还是家路径，不要自行假设路径。
+如果当前是公司环境，请只做结构、代码、配置、依赖方向等文件级验收，不要主动执行 Maven 编译、服务启动等构建命令；编译由我自己执行后反馈。
+如果当前是家环境，你可以执行 Maven 编译、安装、服务启动等命令，并把命令结果纳入验收结论。
 请你先不要直接写完整代码。
 请你先说明要检查哪些文件、为什么检查、检查目标是什么。
 检查后请先给结论，再指出问题，然后给我下一步小任务。
