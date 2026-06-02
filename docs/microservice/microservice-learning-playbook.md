@@ -198,9 +198,49 @@ AI 检查项目前，需要先说明：
 4. 下一步任务
 5. 验证方式
 
-### 3.3 每阶段验收规则
+### 3.3 Maven 依赖变更前置说明规则
+
+如果某一步需要新增、删除或调整 Maven 依赖，AI 不能直接修改 POM。
+
+必须先向用户说明：
+
+- 本次为什么需要引入或调整依赖。
+- 具体依赖坐标，包括 `groupId`、`artifactId`、版本来源、`scope`、`optional`。
+- 父 POM 是否需要变化，例如是否新增 `properties`、`dependencyManagement`、`pluginManagement`。
+- 哪些子模块 POM 需要新增依赖，分别为什么需要。
+- 哪些模块明确不应该新增该依赖，尤其是 `api`、`domain`、`common-types` 是否需要保持纯净。
+- 该依赖属于哪个技术边界，例如 MyBatis、Redis、Dubbo、Nacos、Spring Web、MQ。
+- 有没有不引入该依赖的替代方案，以及为什么当前选择它。
+- 引入后怎么验证依赖方向和编译结果。
+
+原则：
+
+```text
+先讲依赖设计，再改 POM。
+
+父 POM 负责版本管理和公共约束。
+子模块 POM 只声明本模块真正需要的依赖。
+domain / api / common-types 不能因为实现方便而被基础设施依赖污染。
+```
+
+### 3.4 每阶段验收规则
 
 每个阶段都必须有明确验收标准。
+
+源码级验收优先规则：
+
+```text
+每个小阶段完成后，AI 必须先做源码级验收，再做命令级验收。
+
+源码级验收必须逐项检查本阶段要求实现的类、方法、配置、Mapper XML、依赖边界和模块归属。
+不能只因为 Maven 编译成功、依赖方向检查无输出，就判断阶段完成。
+
+如果本阶段目标是实现某个 Repository、Service、Controller、Provider、Job、Listener 等具体代码，
+AI 必须打开实际源码，按方法逐项说明是否实现、实现逻辑是否符合业务语义、是否存在空实现、伪实现、TODO、错误兜底或边界泄漏。
+
+命令级验收只能作为补充，用于确认编译、启动、接口调用或环境连通性。
+结论顺序必须是：源码实现是否完成 -> 边界是否正确 -> 命令验证结果。
+```
 
 环境验收分工规则：
 
@@ -212,6 +252,8 @@ AI 检查项目前，需要先说明：
 
 常见验收方式：
 
+- 源码逐项检查本阶段目标是否真实实现
+- 检查是否存在空实现、伪实现、TODO 或只编译不工作的代码
 - `mvn clean compile`
 - `mvn clean install`
 - 服务可启动
@@ -221,7 +263,7 @@ AI 检查项目前，需要先说明：
 - MySQL / Redis / MQ 状态可验证
 - 代码依赖方向符合六边形架构
 
-### 3.4 每阶段文档沉淀
+### 3.5 每阶段文档沉淀
 
 每个阶段完成后，需要沉淀：
 
@@ -599,8 +641,9 @@ E:\Code\Code4Java\group-buy-microservice
 8. 如果我设计不合理，你要直接指出，并解释更好的方案。
 9. 如果涉及六边形架构，要重点检查依赖方向：domain 不能依赖 Dubbo、MyBatis、Redis、Spring Web、Nacos 等外部技术。
 10. 如果涉及微服务拆分，要重点检查服务边界、数据归属、缓存归属、RPC 契约、故障边界、部署边界。
-11. 每个阶段结束时，要帮我总结：我做了什么、为什么这么做、面试怎么讲、还有什么风险。
-12. 回答使用中文，风格像老师带学生做真实企业项目。
+11. 如果需要新增、删除或调整 Maven 依赖，请先说明具体依赖坐标、父 POM 是否变化、哪些子模块 POM 需要新增、哪些模块不应该新增，以及为什么这样设计；未经说明不要直接改 POM。
+12. 每个阶段结束时，要帮我总结：我做了什么、为什么这么做、面试怎么讲、还有什么风险。
+13. 回答使用中文，风格像老师带学生做真实企业项目。
 
 当前项目总体规划：
 group-buy-microservice/
@@ -624,7 +667,7 @@ group-buy-microservice/
     group-buy-settlement-service/
     group-buy-job-service/ 或独立任务调度模块
 
-截至 2026-06-02 的当前进度：
+截至 2026-06-03 凌晨的当前进度：
 1. 已经完成整体方向选择：从旧单体项目迁移到新的独立微服务项目目录。
 2. 已经确定微服务拆分方式：按业务能力纵向拆分，每个业务服务独立工程，服务内部继续保持 DDD / 六边形架构。
 3. 已经确定第一个拆分服务是 group-buy-tag-service。
@@ -642,15 +685,25 @@ group-buy-microservice/
 15. application-dev.yml 已指向 group_buy_tag；MySQL 初始化脚本已放在旧单体项目 docs/microservice/sql/01-init-group-buy-tag.sql。
 16. MySQL Docker 初始化脚本曾遇到中文编码问题，已确认应保持 UTF-8 上传，并通过重新执行 SQL 解决。
 17. 公司环境规则已经固定：AI 只做结构、代码、配置、依赖方向等文件级验收，不主动执行 Maven 编译；编译由用户执行后反馈。家环境下 AI 可以编译验收。
-18. 当前准备进入阶段 3：tag-service 真实迁移。阶段 3 必须在新对话中开启。
+18. 阶段 3：tag-service 真实迁移已经开始。
+19. 阶段 3-1：tag-service API / Domain 小步迁移已经完成检查点文档：docs/microservice/06-stage-3-1-tag-api-domain-checkpoint.md。
+20. group-buy-tag-api 当前已有 ITagQueryService、TagQueryRequestDTO、TagQueryResponseDTO；DTO 已按 Java 序列化规范使用 serialVersionUID。
+21. group-buy-tag-domain 当前已有 ITagService、TagService、ITagRepository、CrowdTagsJobEntity；domain 仍不依赖 MyBatis、Redis、Redisson、Dubbo、Spring Web、Nacos。
+22. TagService 当前已通过 ITagRepository 端口表达 matchCrowdTag 和 executeCrowdTagBatch 的最小领域编排；批次任务中的用户列表仍是临时模拟数据，后续需要接入真实规则来源。
+23. 阶段 3-2：tag-service infrastructure / Repository 最小闭环正在进行中，尚未完成最终验收，不能进入 3-3。
+24. 3-2 已完成的部分包括：父 POM 管理 MyBatis、MySQL、Redisson、Guava 版本；group-buy-tag-infrastructure 引入相关基础设施依赖；PO、DAO、Mapper XML 已基本迁移；Redis bitmap 工具和 Redisson 配置已加入 infrastructure。
+25. 当前 Repository 已有核心实现：isUserMatchedTag 读取 Redis bitmap，queryCrowdTagsJob 查询 crowd_tags_job 并转换为领域实体，saveCrowdTagUsers 批量写 crowd_tags_detail 并写 Redis bitmap，updateCrowdTagStatistics 更新 crowd_tags。
+26. 当前 3-2 仍需源码级验收和修正：TagRepository 类注释仍是 TODO；RedisClientConfig.toRedisAddresses 过滤空节点后还需要二次校验；saveCrowdTagUsers 中 MySQL 与 Redis 的一致性风险需要记录为遗留风险；需要确认 DAO/XML/配置与 Repository 的真实实现逐项匹配。
 
 当前最近一次任务：
-进入阶段 3 前，先做 tag-service 真实迁移的代码盘点和迁移清单设计，包括：
-1. 从旧单体项目中盘点 tag 相关代码、配置、Mapper XML、SQL、Redis bitmap 逻辑、HTTP/Job 入口。
-2. 按 api、domain、infrastructure、trigger、app 五层模块给每个类和资源设计归属。
-3. 明确哪些内容先迁移，哪些内容暂缓，哪些模板/历史代码不迁移。
-4. 重点防止 MyBatis、Redis、Dubbo、Spring Web、Nacos 等外部技术进入 domain。
-5. 先输出迁移清单和落位方案，不直接批量复制真实业务代码。
+继续阶段 3-2：tag-service infrastructure / Repository 最小闭环的源码级验收与修正，包括：
+1. 先打开实际源码检查 TagRepository、RedisClientConfig、RedisClientConfigProperties、TagBitmapUtils、DAO、PO、Mapper XML、application-dev.yml。
+2. 逐项确认 Repository 四个方法是否真实实现、是否符合业务语义、是否仍有空实现、伪实现、TODO 或边界泄漏。
+3. 确认 Redis 单机 / 集群可扩展配置是否合理，尤其检查 cluster 节点转换和空节点校验。
+4. 确认 MyBatis Mapper XML 文件名、namespace、方法名、parameterType/resultMap 与 DAO 对齐。
+5. 确认基础设施依赖只进入 infrastructure，不污染 api、domain、common-types。
+6. 源码级验收通过后，再做命令级验收；不能只因为 Maven 编译成功就判断 3-2 完成。
+7. 3-2 未完成前，不进入 3-3 app 装配与启动验收。
 
 请你根据我接下来给出的当前阶段，带我一步一步完成。请先检查，再引导，不要直接替我完成所有代码。
 ```
@@ -661,7 +714,7 @@ group-buy-microservice/
 
 ```text
 【当前阶段】
-我现在要做：进入阶段 3：tag-service 真实迁移。第一步不是直接复制代码，而是先从旧单体项目中盘点 tag 相关代码和资源，设计迁移清单与五层模块落位方案。
+我现在要做：继续阶段 3-2：tag-service infrastructure / Repository 最小闭环。当前 3-2 还没有完成，明天第一步必须先做源码级验收和修正，不能直接进入 3-3。
 
 【我已经完成】
 1. 我已经创建了新微服务项目目录：
@@ -709,33 +762,66 @@ group-buy-microservice/
 
 12. MySQL Docker 初始化脚本曾遇到中文编码问题，已确认 SQL 文件需要保持 UTF-8 上传，并已经重新执行 SQL 解决。
 
-13. 当前还没有正式迁移 tag-service 的真实业务代码。
+13. 阶段 3-1：tag-service API / Domain 小步迁移已经完成检查点文档：
+    docs/microservice/06-stage-3-1-tag-api-domain-checkpoint.md
+
+14. group-buy-tag-api 当前已有：
+    ITagQueryService
+    TagQueryRequestDTO
+    TagQueryResponseDTO
+
+15. group-buy-tag-domain 当前已有：
+    ITagService
+    TagService
+    ITagRepository
+    CrowdTagsJobEntity
+
+16. TagService 当前已通过 ITagRepository 端口表达：
+    matchCrowdTag(userId, tagId)
+    executeCrowdTagBatch(tagId, batchId)
+
+17. domain 当前仍不依赖 Dubbo、MyBatis、Redis、Redisson、Spring Web、Nacos。
+
+18. 阶段 3-2 已经开始，但尚未完成最终验收。
+
+19. 3-2 当前已经做了这些内容：
+    - 父 POM 已管理 MyBatis、MySQL、Redisson、Guava 版本
+    - group-buy-tag-infrastructure 已引入 MyBatis、MySQL、Redisson、Guava、Lombok
+    - 已迁移 CrowdTags、CrowdTagsDetail、CrowdTagsJob
+    - 已迁移 ICrowdTagsDao、ICrowdTagsDetailDao、ICrowdTagsJobDao
+    - 已迁移 crowd_tags_mapper.xml、crowd_tags_job_mapper.xml、crowd_tags_detail_mapper.xml
+    - 已新增 RedisClientConfig、RedisClientConfigProperties、TagBitmapUtils
+    - TagRepository 当前已有四个方法的核心实现
 
 【我当前需要完成的事情】
-1. 请先检查旧单体项目中 tag 相关代码和资源分布。
+1. 请先做 3-2 的源码级验收，不要先跑 Maven，也不要直接说进入 3-3。
 2. 请说明你要看哪些文件、为什么看、本次检查目标是什么。
-3. 请重点盘点：
-   - 标签领域模型、领域服务、仓储接口
-   - DAO / Mapper / PO / MyBatis XML
-   - Redis bitmap key、生成逻辑、查询逻辑
-   - HTTP Controller、Job、MQ Listener、RPC 候选入口
-   - 与 Activity / Trade 主链路耦合的标签调用点
-4. 请把盘点结果整理成迁移清单，标明每个类或资源应该进入 api、domain、infrastructure、trigger、app 哪个模块。
-5. 请指出哪些代码可以迁移，哪些需要改造后迁移，哪些不应该迁移。
-6. 请先不要直接批量复制真实业务代码。
-7. 请给我下一步小任务：先完成迁移清单和落位方案，再开始小步迁移。
+3. 请重点检查：
+   - TagRepository 四个方法是否真实实现，是否符合 ITagRepository 的业务语义
+   - 是否仍存在空实现、伪实现、TODO、错误兜底或边界泄漏
+   - RedisClientConfig 是否支持 standalone / cluster，cluster 节点转换和空节点校验是否可靠
+   - RedisClientConfigProperties 与 application-dev.yml 的配置绑定是否一致
+   - TagBitmapUtils 的 key 前缀和 offset 算法是否只留在 infrastructure
+   - DAO / PO / Mapper XML 的 namespace、方法名、parameterType/resultMap 是否对齐
+   - MyBatis、Redis、Redisson、Spring 相关依赖是否只进入 infrastructure，没有污染 api、domain、common-types
+4. 请明确判断 3-2 是否完成；如果没有完成，请列出剩余小问题和下一步小任务。
+5. 只有源码级验收通过后，才允许做 Maven 编译等命令级验收。
+6. 3-2 未完成前，不要进入 3-3 app 装配、启动类、服务启动、Dubbo、Nacos。
 
 【我遇到的问题】
-我不确定旧单体里哪些代码真正属于 tag-service，也不确定这些代码迁移到微服务后应该分别放在 api、domain、infrastructure、trigger、app 哪一层。
-我也担心直接复制旧代码会把 MyBatis、Redis、Spring Web、Dubbo 等外部技术带进 domain，破坏六边形架构边界。
+3-2 已经有一部分代码，但还没有完成源码级验收。
+我需要确认 Repository 不是只编译通过，而是真的实现了 tag-service 的基础设施闭环。
+我也需要确认 Redis 单机 / 集群配置不会把 Repository 污染成依赖具体部署模式的代码。
+另外，之前出现过只用 Maven 编译结果判断阶段完成的问题，所以这次必须先看实际源码。
 
 【我的要求】
 如果我在新对话里没有明确说明当前是公司环境还是家环境，而你需要读取、检查、修改项目文件，或者需要执行命令，请必须先问我当前使用公司路径还是家路径，不要自行假设路径。
 如果当前是公司环境，请只做结构、代码、配置、依赖方向等文件级验收，不要主动执行 Maven 编译、服务启动等构建命令；编译由我自己执行后反馈。
 如果当前是家环境，你可以执行 Maven 编译、安装、服务启动等命令，并把命令结果纳入验收结论。
+如果本阶段需要新增、删除或调整 Maven 依赖，请先说明具体依赖坐标、父 POM 是否变化、哪些子模块 POM 需要新增、哪些模块不应该新增，以及为什么这样设计；不要直接改 POM。
 请你先不要直接写完整代码。
 请你先说明要检查哪些文件、为什么检查、检查目标是什么。
-检查后请先给结论，再指出问题，然后给我下一步小任务。
+检查后请按顺序输出：源码实现是否完成 -> 边界是否正确 -> 命令验证是否需要执行 -> 剩余问题 -> 下一步小任务。
 每一步请先讲为什么，再讲我该怎么做，最后讲怎么验证。
 ```
 
