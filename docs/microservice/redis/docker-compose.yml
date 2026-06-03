@@ -1,0 +1,21 @@
+services:
+  redis:
+    image: redis:7.2-alpine
+    container_name: xuele-redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - xuele_redis_123456
+    ports:
+      - "16379:6379"
+    volumes:
+      - ./data:/data
+    networks:
+      - xuele-group-buy-net
+
+networks:
+  xuele-group-buy-net:
+    external: true

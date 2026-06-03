@@ -480,6 +480,18 @@ activity / trade 等服务不能直接读写该 bitmap，只能通过 tag-servic
 
 ## 7. 项目拆分阶段路线
 
+重要边界：
+
+```text
+旧单体项目不作为后续改造对象。
+旧单体只用于阅读、对照、迁移设计和必要的数据/SQL 参考。
+
+后续访问 tag-service、调用 ITagQueryService、替换标签表/bitmap 直连逻辑，
+都发生在新微服务项目继续拆 activity-service、trade-service 等服务时。
+
+不要设置“改造旧单体主链路调用 tag-service”的阶段。
+```
+
 ### 阶段 0：整体规划
 
 目标：
@@ -521,15 +533,14 @@ group-buy-common-types 无 Spring / MyBatis / Redis 等框架污染
 - 迁移 Redis bitmap 读写
 - 提供 Dubbo 标签查询接口
 
-### 阶段 4：主链路改造
+当前验收边界：
 
-目标：
+```text
+tag-service provider 侧完成即可收口。
+真实 RPC 消费方验证后置到后续新微服务拆分阶段完成。
+```
 
-- activity / trade 不再直接访问标签表
-- activity / trade 不再直接访问标签 bitmap
-- 通过 Dubbo 调用 tag-service
-
-### 阶段 5：activity-service 拆分
+### 阶段 4：activity-service 拆分
 
 目标：
 
@@ -537,8 +548,20 @@ group-buy-common-types 无 Spring / MyBatis / Redis 等框架污染
 - 营销试算
 - 活动规则树
 - 活动缓存
+- 作为新微服务消费者接入 tag-service
+- 通过 Dubbo 调用 `ITagQueryService`
+- 不直接访问 tag-service 拥有的标签表或标签 bitmap
 
-### 阶段 6：trade-service 拆分
+验收：
+
+```text
+activity-service 只依赖 tag-service 的 api jar。
+activity-service 不依赖 tag-service 的 domain / infrastructure / app。
+activity-service 不直接访问 crowd_tags 相关表和 crowd:tag:bitmap:{tagId}。
+真实业务接口中完成一次标签 RPC 调用验证。
+```
+
+### 阶段 5：trade-service 拆分
 
 目标：
 
@@ -547,6 +570,17 @@ group-buy-common-types 无 Spring / MyBatis / Redis 等框架污染
 - 退单
 - 订单状态机
 - 库存一致性
+- 如交易链路需要标签判断，只通过 tag-service API 调用
+
+### 阶段 6：settlement-service 拆分
+
+目标：
+
+- 结算规则
+- 结算单据
+- 结算状态
+- 结算通知入口
+- 与 trade-service 的边界划分
 
 ### 阶段 7：异步任务与 MQ 拆分
 
@@ -599,9 +633,31 @@ group-buy-common-types 无 Spring / MyBatis / Redis 等框架污染
 - 面试问答
 - 踩坑复盘
 
-## 8. 新对话固定提示词模板
+## 8. 新对话提示词维护规则
 
-每次新开对话，先复制下面这段。它包含项目总背景、协作规则和当前进度快照。
+旧版手册曾把“固定背景、协作规则、当前进度、当前任务”全部复制到一个超长模板里，后续每推进一个阶段都要重复修改大量内容。
+
+现在统一改为三段式：
+
+```text
+固定背景：长期稳定，不频繁改。
+当前进度快照：只维护阶段状态和关键文档索引。
+当前任务：每次新对话按正在推进的小阶段单独填写。
+```
+
+原则：
+
+- 固定背景不要重复写每个阶段的全部细节。
+- 当前进度只写“已完成什么、文档在哪里、下一阶段是什么”。
+- 当前任务只描述本次小阶段目标、检查范围、验收要求。
+- 如果阶段完成，先更新当前进度快照，再开启新阶段。
+- 不再复制上一阶段的完整长清单，详细内容以阶段复盘文档为准。
+
+## 9. 新对话固定提示词模板
+
+每次新开对话，先复制“固定背景”，再按需要补充“当前进度快照”和“当前任务”。
+
+### 9.1 固定背景
 
 ```text
 你是我的 Java 后端微服务架构导师和项目协作伙伴。
@@ -621,6 +677,11 @@ E:\Code\Code4Java\group-buy-microservice
 家环境路径：
 旧单体项目路径：E:\Code\Code4Java\xuele-group-buy
 新微服务项目路径：E:\Code\Code4Java\group-buy-microservice
+
+项目边界：
+旧单体项目保持不变，不作为后续改造对象。
+旧单体只用于阅读、对照、迁移设计和必要的数据/SQL 参考。
+后续服务间调用、访问 tag-service、接入 ITagQueryService，全部发生在新微服务项目继续拆分出的服务之间。
 
 路径确认要求：
 每次新对话开始时，如果我没有明确说明当前是公司环境还是家环境，而你需要读取、检查、修改项目文件，或者需要执行命令，你必须先问我：当前使用公司路径还是家路径？
@@ -666,198 +727,47 @@ group-buy-microservice/
     group-buy-trade-service/
     group-buy-settlement-service/
     group-buy-job-service/ 或独立任务调度模块
-
-截至 2026-06-03 当前进度：
-1. 已经完成整体方向选择：从旧单体项目迁移到新的独立微服务项目目录。
-2. 已经确定微服务拆分方式：按业务能力纵向拆分，每个业务服务独立工程，服务内部继续保持 DDD / 六边形架构。
-3. 已经确定第一个拆分服务是 group-buy-tag-service。
-4. 已经确定先做最小公共基础库 group-buy-common，而不是直接迁移 tag-service。
-5. 阶段 1：group-buy-common 的代码与构建验收已经完成，并已沉淀复盘文档：docs/microservice/04-stage-1-common-review.md。
-6. group-buy-common 当前只包含 group-buy-common-types，不先扩展 starter。
-7. group-buy-common-types 已补齐 Constants、ResponseCode、AppException、Response<T>。
-8. group-buy-common-types 不依赖 Spring Boot、MyBatis、Redis、Dubbo、Nacos、Lombok，也不放 Tag、Activity、Trade 等业务模型。
-9. 已执行 mvn clean install，group-buy-common-types 可以作为 jar 被其他服务依赖。
-10. 阶段 2：group-buy-tag-service 骨架和 Maven 依赖方向已经完成核心验收，并已沉淀复盘文档：docs/microservice/05-stage-2-tag-service-skeleton-review.md。
-11. group-buy-tag-service 已具备五层模块：api、domain、infrastructure、trigger、app。
-12. 当前 Maven 依赖方向已整理为：api -> common-types，domain -> common-types，infrastructure -> domain，trigger -> api + domain，app -> trigger + infrastructure。
-13. 已确认 domain 不依赖 Dubbo、MyBatis、Redis、Spring Web、Nacos 等外部技术。
-14. 已清理本地 Response<T>、xxx / yyy 脚手架领域目录、frame_case_mapper.xml 等明显模板遗留。
-15. application-dev.yml 已指向 group_buy_tag；MySQL 初始化脚本已放在旧单体项目 docs/microservice/sql/01-init-group-buy-tag.sql。
-16. MySQL Docker 初始化脚本曾遇到中文编码问题，已确认应保持 UTF-8 上传，并通过重新执行 SQL 解决。
-17. 公司环境规则已经固定：AI 只做结构、代码、配置、依赖方向等文件级验收，不主动执行 Maven 编译；编译由用户执行后反馈。家环境下 AI 可以编译验收。
-18. 阶段 3：tag-service 真实迁移已经开始。
-19. 阶段 3-1：tag-service API / Domain 小步迁移已经完成检查点文档：docs/microservice/06-stage-3-1-tag-api-domain-checkpoint.md。
-20. group-buy-tag-api 当前已有 ITagQueryService、TagQueryRequestDTO、TagQueryResponseDTO；DTO 已按 Java 序列化规范使用 serialVersionUID。
-21. group-buy-tag-domain 当前已有 ITagService、TagService、ITagRepository、CrowdTagsJobEntity；domain 仍不依赖 MyBatis、Redis、Redisson、Dubbo、Spring Web、Nacos。
-22. TagService 当前已通过 ITagRepository 端口表达 matchCrowdTag 和 executeCrowdTagBatch 的最小领域编排；批次任务中的用户列表仍是临时模拟数据，后续需要接入真实规则来源。
-23. 阶段 3-2：tag-service infrastructure / Repository 最小闭环已经完成源码级验收，并已沉淀检查点文档：docs/microservice/07-stage-3-2-tag-infrastructure-repository-checkpoint.md。
-24. 3-2 已完成内容包括：父 POM 管理 MyBatis、MySQL、Redisson、Guava 版本；group-buy-tag-infrastructure 引入基础设施依赖；PO、DAO、Mapper XML 已迁移；RedisClientConfig、RedisClientConfigProperties、TagBitmapUtils 已加入 infrastructure。
-25. TagRepository 四个方法已经是真实实现：isUserMatchedTag 读取 Redis bitmap，queryCrowdTagsJob 查询 crowd_tags_job 并转换为领域实体，saveCrowdTagUsers 批量写 crowd_tags_detail 并写 Redis bitmap，updateCrowdTagStatistics 更新 crowd_tags。
-26. 3-2 已完成修正：ITagQueryService 模板 TODO 已清理；tag_user 密码已与初始化 SQL 对齐；queryTagIdByUserId 已从 DAO/XML 删除；RedisClientConfig.toRedisAddresses 已补齐空节点过滤后二次校验和 trim 处理。
-27. 3-2 遗留风险已经记录：DB 与 Redis bitmap 非同一事务可能短暂不一致；普通批量 insert 遇到重复 tagId + userId 可能触发重复键异常；bitmap offset 使用 hash + 取模存在低概率碰撞；TagService 批次用户列表仍是临时模拟数据。
-28. 当前是公司环境时，AI 不主动执行 Maven 编译或服务启动；命令级验证由用户在公司环境自行执行后反馈。
-29. 阶段 3-3：tag-service app 装配与启动验收已经完成源码级验收和启动验收，并已沉淀检查点文档：docs/microservice/08-stage-3-3-tag-app-assembly-checkpoint.md。
-30. 3-3 已完成内容包括：新增 TagApplication 启动类；新增 DomainServiceConfig，由 app 层装配 ITagService -> TagService；app 显式引入 spring-boot-starter-web；app 新增 spring-boot-maven-plugin。
-31. 3-3 已确认启动类包路径 cn.xuele.tag 可以扫描 app、trigger、infrastructure、domain 下需要被 Spring 管理的 Bean。
-32. 3-3 已确认 domain 服务没有为了装配方便添加 @Service，domain 仍不依赖 Spring、MyBatis、Redis、Redisson、Dubbo、Nacos。
-33. 3-3 已修正 application-dev.yml 中 spring.datasource.hikari 和 spring.datasource.type 的层级。
-34. 3-3 已解决 Redis 启动连接问题：当前 Docker Redis 使用密码 xuele_redis_123456，dev 配置已补齐 redis.sdk.config.password，并将本地默认 host 调整为 127.0.0.1、port 调整为 16379。
-35. 用户已在公司环境反馈：tag-service 编译通过，修正 Redis 配置后服务可以启动。
-36. 下一步进入阶段 3-4：tag-service Dubbo Provider 源码级实现与验收。3-4 先实现 trigger 层 Dubbo Provider，验证 api 契约到 domain 服务的调用链路；不直接进入消费者改造，不直接进入 activity / trade 主链路改造。
-
-当前最近一次任务：
-开始阶段 3-4：tag-service Dubbo Provider 源码级实现与验收，包括：
-1. 先打开 group-buy-tag-api 的 ITagQueryService、TagQueryRequestDTO、TagQueryResponseDTO，确认 RPC 契约是否适合 Provider 实现。
-2. 打开 group-buy-tag-trigger 的 POM 和源码目录，确认当前是否已有 Dubbo Provider 实现类。
-3. 打开 group-buy-tag-app 的 POM、启动类、application.yml、application-dev.yml，确认 app 是否具备承载 Dubbo Provider 的装配位置。
-4. 如果需要引入 Dubbo / Nacos 相关 Maven 依赖，必须先说明依赖设计，再修改 POM。
-5. Dubbo 注解只允许出现在 trigger 入站适配器，不能污染 api、domain、infrastructure。
-6. Provider 应该实现 ITagQueryService，内部调用 domain 的 ITagService.matchCrowdTag。
-7. Provider 需要完成请求参数校验、DTO 转换和响应封装，不能写空实现、伪实现或直接绕过 domain 访问 Redis / MyBatis。
-8. 3-4 第一小步只做 Dubbo Provider 源码级闭环和本服务启动装配检查；不直接进入 activity / trade 消费方改造，不直接做主链路替换。
-
-请你根据我接下来给出的当前阶段，带我一步一步完成。请先检查，再引导，不要直接替我完成所有代码。
 ```
 
-## 9. 当前阶段新对话模板
+### 9.2 当前进度快照
 
-固定提示词后，再复制下面这段。这里已经写入我们当前进行到的位置。
+这段需要随着阶段推进维护。当前快照如下：
+
+```text
+截至 2026-06-03 当前进度：
+
+1. 阶段 0：整体规划已完成，已确定按业务能力纵向拆分，新项目为独立微服务项目。
+2. 阶段 1：group-buy-common 已完成，复盘文档：docs/microservice/04-stage-1-common-review.md。
+3. 阶段 2：group-buy-tag-service 骨架已完成，复盘文档：docs/microservice/05-stage-2-tag-service-skeleton-review.md。
+4. 阶段 3-1：tag-service API / Domain 已完成，检查点：docs/microservice/06-stage-3-1-tag-api-domain-checkpoint.md。
+5. 阶段 3-2：tag-service Infrastructure / Repository 已完成，检查点：docs/microservice/07-stage-3-2-tag-infrastructure-repository-checkpoint.md。
+6. 阶段 3-3：tag-service App 装配与启动验收已完成，检查点：docs/microservice/08-stage-3-3-tag-app-assembly-checkpoint.md。
+7. 阶段 3-4：tag-service Dubbo Provider 暴露与 Nacos 注册已完成，检查点：docs/microservice/09-stage-3-4-tag-dubbo-provider-checkpoint.md。
+8. 阶段 3 已正式完结：tag-service provider 侧迁移完成。
+9. tag-service 当前具备独立启动、独立数据访问、Redis bitmap 查询、领域服务编排、Dubbo Provider 暴露和 Nacos 注册能力。
+10. 当前不改旧单体主链路，不写临时 RPC Test；真实 RPC 消费验证放到后续新微服务拆分阶段。
+11. 下一阶段进入阶段 4：group-buy-activity-service 拆分，并在新 activity-service 中作为消费者调用 tag-service。
+```
+
+### 9.3 当前任务模板
+
+每次新阶段只补这段，不要复制上一阶段完整长清单。
 
 ```text
 【当前阶段】
-我现在要做：开始阶段 3-4：tag-service Dubbo Provider 源码级实现与验收。阶段 3-3 的源码级装配验收和启动验收已经完成，并已沉淀检查点文档：docs/microservice/08-stage-3-3-tag-app-assembly-checkpoint.md。
-
-3-4 的第一步必须先做源码级契约与依赖设计检查，不要先跑 Maven，不要直接启动服务，不要直接进入 activity / trade 消费方改造。
-
-【我已经完成】
-1. 我已经创建了新微服务项目目录：
-   公司环境：D:\Code4J\group-buy-microservice
-   家环境：E:\Code\Code4Java\group-buy-microservice
-
-2. 我已经完成公共工程的代码与构建验收：
-   group-buy-common/
-     group-buy-common-types/
-
-3. group-buy-common-types 当前包含这些稳定公共类型：
-   Constants
-   ResponseCode
-   AppException
-   Response<T>
-
-4. group-buy-common-types 已确认不依赖 Spring Boot、MyBatis、Redis、Dubbo、Nacos、Lombok 等框架。
-
-5. 阶段 1 已完成复盘文档：
-   docs/microservice/04-stage-1-common-review.md
-
-6. 阶段 2：group-buy-tag-service 骨架已经完成核心验收，并已完成复盘文档：
-   docs/microservice/05-stage-2-tag-service-skeleton-review.md
-
-7. group-buy-tag-service 当前已有五个模块骨架：
-   group-buy-tag-api/
-   group-buy-tag-domain/
-   group-buy-tag-infrastructure/
-   group-buy-tag-trigger/
-   group-buy-tag-app/
-
-8. group-buy-tag-service 当前 Maven 依赖方向已经整理为：
-   group-buy-tag-api -> group-buy-common-types
-   group-buy-tag-domain -> group-buy-common-types
-   group-buy-tag-infrastructure -> group-buy-tag-domain
-   group-buy-tag-trigger -> group-buy-tag-api + group-buy-tag-domain
-   group-buy-tag-app -> group-buy-tag-trigger + group-buy-tag-infrastructure
-
-9. 已确认 domain 不依赖 Dubbo、MyBatis、Redis、Spring Web、Nacos 等外部技术。
-
-10. 已清理本地 Response<T>、xxx / yyy 脚手架领域目录、frame_case_mapper.xml 等明显模板遗留。
-
-11. application-dev.yml 已指向 group_buy_tag；MySQL 初始化脚本在：
-    docs/microservice/sql/01-init-group-buy-tag.sql
-
-12. MySQL Docker 初始化脚本曾遇到中文编码问题，已确认 SQL 文件需要保持 UTF-8 上传，并已经重新执行 SQL 解决。
-
-13. 阶段 3-1：tag-service API / Domain 小步迁移已经完成检查点文档：
-    docs/microservice/06-stage-3-1-tag-api-domain-checkpoint.md
-
-14. group-buy-tag-api 当前已有：
-    ITagQueryService
-    TagQueryRequestDTO
-    TagQueryResponseDTO
-
-15. group-buy-tag-domain 当前已有：
-    ITagService
-    TagService
-    ITagRepository
-    CrowdTagsJobEntity
-
-16. TagService 当前已通过 ITagRepository 端口表达：
-    matchCrowdTag(userId, tagId)
-    executeCrowdTagBatch(tagId, batchId)
-
-17. domain 当前仍不依赖 Dubbo、MyBatis、Redis、Redisson、Spring Web、Nacos。
-
-18. 阶段 3-2：tag-service infrastructure / Repository 最小闭环已经完成源码级验收，并已完成检查点文档：
-    docs/microservice/07-stage-3-2-tag-infrastructure-repository-checkpoint.md
-
-19. 3-2 已经完成这些内容：
-    - 父 POM 已管理 MyBatis、MySQL、Redisson、Guava 版本
-    - group-buy-tag-infrastructure 已引入 MyBatis、MySQL、Redisson、Guava、Lombok
-    - 已迁移 CrowdTags、CrowdTagsDetail、CrowdTagsJob
-    - 已迁移 ICrowdTagsDao、ICrowdTagsDetailDao、ICrowdTagsJobDao
-    - 已迁移 crowd_tags_mapper.xml、crowd_tags_job_mapper.xml、crowd_tags_detail_mapper.xml
-    - 已新增 RedisClientConfig、RedisClientConfigProperties、TagBitmapUtils
-    - TagRepository 四个方法已经完成真实实现
-    - RedisClientConfig.toRedisAddresses 已补齐空节点过滤后二次校验和 trim 处理
-    - ITagQueryService 模板 TODO 已清理
-    - tag_user 密码已与初始化 SQL 对齐
-    - queryTagIdByUserId 已从 DAO/XML 删除
-
-20. 3-2 当前仍记录这些后续风险，但不阻塞 3-2 收口：
-    - DB 与 Redis bitmap 非同一事务，可能短暂不一致
-    - crowd_tags_detail 普通批量 insert 遇到重复 tagId + userId 可能触发重复键异常
-    - bitmap offset 使用 hash + 取模，存在低概率碰撞
-    - TagService 批次任务中的用户列表仍是临时模拟数据，后续需要接入真实规则来源
-
-21. 阶段 3-3：tag-service app 装配与启动验收已经完成源码级验收和启动验收，并已完成检查点文档：
-    docs/microservice/08-stage-3-3-tag-app-assembly-checkpoint.md
-
-22. 3-3 已经完成这些内容：
-    - 新增 TagApplication 启动类
-    - 新增 DomainServiceConfig，由 app 层装配 ITagService -> TagService
-    - group-buy-tag-app 显式引入 spring-boot-starter-web
-    - group-buy-tag-app 新增 spring-boot-maven-plugin
-    - 修正 spring.datasource.hikari 与 spring.datasource.type 配置层级
-    - 补齐 redis.sdk.config.password，默认值为 xuele_redis_123456
-    - 将 dev 默认 Redis host 调整为 127.0.0.1，port 为 16379
-
-23. 3-3 已确认：
-    - TagApplication 位于 cn.xuele.tag 根包下，可以扫描 app、trigger、infrastructure、domain
-    - TagService 没有添加 @Service，domain 仍保持纯净
-    - TagRepository、RedisClientConfig、MyBatis DAO / Mapper XML 能被 app 装配
-    - 用户已在公司环境反馈编译通过，Redis 配置修正后服务可以启动
-
-24. 下一步进入阶段 3-4：tag-service Dubbo Provider 源码级实现与验收。
+我现在要做：【填写阶段名称，例如 阶段 4：group-buy-activity-service 拆分】。
 
 【我当前需要完成的事情】
-1. 请先做 3-4 的源码级契约与依赖设计检查，不要先跑 Maven，不要启动服务，也不要直接进入 activity / trade 消费方改造。
-2. 请说明你要看哪些文件、为什么看、本次检查目标是什么。
-3. 请重点检查：
-   - group-buy-tag-api 的 ITagQueryService、TagQueryRequestDTO、TagQueryResponseDTO 是否适合作为 Dubbo Provider 契约
-   - group-buy-tag-trigger 当前是否已有 Provider 实现类
-   - Provider 应该放在哪个包、实现哪个接口、注入哪个 domain 服务
-   - Provider 是否应该只调用 ITagService.matchCrowdTag，不允许绕过 domain 直接访问 Redis / MyBatis
-   - Dubbo 注解应该只出现在 trigger 入站适配器，不能污染 api、domain、infrastructure、common-types
-   - group-buy-tag-trigger / group-buy-tag-app 是否需要新增 Dubbo 相关依赖
-   - 如果需要引入 Dubbo / Nacos 依赖，请先说明依赖坐标、版本来源、父 POM 是否变化、哪些子模块需要新增、哪些模块不应该新增
-   - application.yml、application-dev.yml 是否需要新增 Dubbo Provider 配置；如果需要，先讲配置边界和原因
-4. 请明确判断 3-4 是否已经具备 Provider 源码实现条件；如果没有，请列出剩余小问题和下一步小任务。
-5. 第一小步只做 Provider 源码级闭环和本服务启动装配检查；暂不做消费者调用，暂不改 activity / trade，暂不做主链路替换。
-6. 只有 Provider 源码级检查通过后，才允许让我在公司环境执行 Maven 编译、服务启动等命令级验收。
+1. 请先说明本次要检查哪些文件、为什么检查、本次检查目标是什么。
+2. 每次只推进一个小阶段。
+3. 如果涉及 Maven 依赖，先讲依赖设计，再改 POM。
+4. 如果涉及六边形架构，重点检查 domain 是否保持纯净。
+5. 如果涉及服务间调用，重点检查消费者只依赖 provider 的 api jar。
+6. 不要修改旧单体项目主链路；旧单体只作为阅读和迁移参考。
+7. 阶段完成前先做源码级验收，再做命令级验收。
 
 【我遇到的问题】
-3-3 已经完成源码级装配验收和启动验收，现在需要进入 3-4。
-我需要在 trigger 层实现 tag-service 的 Dubbo Provider，让它实现 api 模块里的 ITagQueryService，并调用 domain 层的 ITagService。
-我尤其需要确认 Dubbo 注解、Dubbo 依赖、Provider 实现、DTO 转换、异常语义和配置都放在正确边界内。
-3-4 未完成前，不要进入 activity / trade 消费方改造，不要直接做主链路替换。
+【填写当前卡点或目标，例如：需要先从旧单体阅读活动相关代码，判断 activity-service 的服务边界和表归属。】
 
 【我的要求】
 如果我在新对话里没有明确说明当前是公司环境还是家环境，而你需要读取、检查、修改项目文件，或者需要执行命令，请必须先问我当前使用公司路径还是家路径，不要自行假设路径。
@@ -866,7 +776,7 @@ group-buy-microservice/
 如果本阶段需要新增、删除或调整 Maven 依赖，请先说明具体依赖坐标、父 POM 是否变化、哪些子模块 POM 需要新增、哪些模块不应该新增，以及为什么这样设计；不要直接改 POM。
 请你先不要直接写完整代码。
 请你先说明要检查哪些文件、为什么检查、检查目标是什么。
-检查后请按顺序输出：依赖设计是否合理 -> Provider 源码是否完成 -> 边界是否正确 -> 命令验证是否需要执行 -> 剩余问题 -> 下一步小任务。
+检查后请按顺序输出：依赖设计是否合理 -> 本阶段源码实现是否完成 -> 边界是否正确 -> 命令验证是否需要执行 -> 剩余问题 -> 下一步小任务。
 每一步请先讲为什么，再讲我该怎么做，最后讲怎么验证。
 ```
 
