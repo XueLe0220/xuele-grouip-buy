@@ -667,7 +667,7 @@ group-buy-microservice/
     group-buy-settlement-service/
     group-buy-job-service/ 或独立任务调度模块
 
-截至 2026-06-03 凌晨的当前进度：
+截至 2026-06-03 当前进度：
 1. 已经完成整体方向选择：从旧单体项目迁移到新的独立微服务项目目录。
 2. 已经确定微服务拆分方式：按业务能力纵向拆分，每个业务服务独立工程，服务内部继续保持 DDD / 六边形架构。
 3. 已经确定第一个拆分服务是 group-buy-tag-service。
@@ -690,20 +690,31 @@ group-buy-microservice/
 20. group-buy-tag-api 当前已有 ITagQueryService、TagQueryRequestDTO、TagQueryResponseDTO；DTO 已按 Java 序列化规范使用 serialVersionUID。
 21. group-buy-tag-domain 当前已有 ITagService、TagService、ITagRepository、CrowdTagsJobEntity；domain 仍不依赖 MyBatis、Redis、Redisson、Dubbo、Spring Web、Nacos。
 22. TagService 当前已通过 ITagRepository 端口表达 matchCrowdTag 和 executeCrowdTagBatch 的最小领域编排；批次任务中的用户列表仍是临时模拟数据，后续需要接入真实规则来源。
-23. 阶段 3-2：tag-service infrastructure / Repository 最小闭环正在进行中，尚未完成最终验收，不能进入 3-3。
-24. 3-2 已完成的部分包括：父 POM 管理 MyBatis、MySQL、Redisson、Guava 版本；group-buy-tag-infrastructure 引入相关基础设施依赖；PO、DAO、Mapper XML 已基本迁移；Redis bitmap 工具和 Redisson 配置已加入 infrastructure。
-25. 当前 Repository 已有核心实现：isUserMatchedTag 读取 Redis bitmap，queryCrowdTagsJob 查询 crowd_tags_job 并转换为领域实体，saveCrowdTagUsers 批量写 crowd_tags_detail 并写 Redis bitmap，updateCrowdTagStatistics 更新 crowd_tags。
-26. 当前 3-2 仍需源码级验收和修正：TagRepository 类注释仍是 TODO；RedisClientConfig.toRedisAddresses 过滤空节点后还需要二次校验；saveCrowdTagUsers 中 MySQL 与 Redis 的一致性风险需要记录为遗留风险；需要确认 DAO/XML/配置与 Repository 的真实实现逐项匹配。
+23. 阶段 3-2：tag-service infrastructure / Repository 最小闭环已经完成源码级验收，并已沉淀检查点文档：docs/microservice/07-stage-3-2-tag-infrastructure-repository-checkpoint.md。
+24. 3-2 已完成内容包括：父 POM 管理 MyBatis、MySQL、Redisson、Guava 版本；group-buy-tag-infrastructure 引入基础设施依赖；PO、DAO、Mapper XML 已迁移；RedisClientConfig、RedisClientConfigProperties、TagBitmapUtils 已加入 infrastructure。
+25. TagRepository 四个方法已经是真实实现：isUserMatchedTag 读取 Redis bitmap，queryCrowdTagsJob 查询 crowd_tags_job 并转换为领域实体，saveCrowdTagUsers 批量写 crowd_tags_detail 并写 Redis bitmap，updateCrowdTagStatistics 更新 crowd_tags。
+26. 3-2 已完成修正：ITagQueryService 模板 TODO 已清理；tag_user 密码已与初始化 SQL 对齐；queryTagIdByUserId 已从 DAO/XML 删除；RedisClientConfig.toRedisAddresses 已补齐空节点过滤后二次校验和 trim 处理。
+27. 3-2 遗留风险已经记录：DB 与 Redis bitmap 非同一事务可能短暂不一致；普通批量 insert 遇到重复 tagId + userId 可能触发重复键异常；bitmap offset 使用 hash + 取模存在低概率碰撞；TagService 批次用户列表仍是临时模拟数据。
+28. 当前是公司环境时，AI 不主动执行 Maven 编译或服务启动；命令级验证由用户在公司环境自行执行后反馈。
+29. 阶段 3-3：tag-service app 装配与启动验收已经完成源码级验收和启动验收，并已沉淀检查点文档：docs/microservice/08-stage-3-3-tag-app-assembly-checkpoint.md。
+30. 3-3 已完成内容包括：新增 TagApplication 启动类；新增 DomainServiceConfig，由 app 层装配 ITagService -> TagService；app 显式引入 spring-boot-starter-web；app 新增 spring-boot-maven-plugin。
+31. 3-3 已确认启动类包路径 cn.xuele.tag 可以扫描 app、trigger、infrastructure、domain 下需要被 Spring 管理的 Bean。
+32. 3-3 已确认 domain 服务没有为了装配方便添加 @Service，domain 仍不依赖 Spring、MyBatis、Redis、Redisson、Dubbo、Nacos。
+33. 3-3 已修正 application-dev.yml 中 spring.datasource.hikari 和 spring.datasource.type 的层级。
+34. 3-3 已解决 Redis 启动连接问题：当前 Docker Redis 使用密码 xuele_redis_123456，dev 配置已补齐 redis.sdk.config.password，并将本地默认 host 调整为 127.0.0.1、port 调整为 16379。
+35. 用户已在公司环境反馈：tag-service 编译通过，修正 Redis 配置后服务可以启动。
+36. 下一步进入阶段 3-4：tag-service Dubbo Provider 源码级实现与验收。3-4 先实现 trigger 层 Dubbo Provider，验证 api 契约到 domain 服务的调用链路；不直接进入消费者改造，不直接进入 activity / trade 主链路改造。
 
 当前最近一次任务：
-继续阶段 3-2：tag-service infrastructure / Repository 最小闭环的源码级验收与修正，包括：
-1. 先打开实际源码检查 TagRepository、RedisClientConfig、RedisClientConfigProperties、TagBitmapUtils、DAO、PO、Mapper XML、application-dev.yml。
-2. 逐项确认 Repository 四个方法是否真实实现、是否符合业务语义、是否仍有空实现、伪实现、TODO 或边界泄漏。
-3. 确认 Redis 单机 / 集群可扩展配置是否合理，尤其检查 cluster 节点转换和空节点校验。
-4. 确认 MyBatis Mapper XML 文件名、namespace、方法名、parameterType/resultMap 与 DAO 对齐。
-5. 确认基础设施依赖只进入 infrastructure，不污染 api、domain、common-types。
-6. 源码级验收通过后，再做命令级验收；不能只因为 Maven 编译成功就判断 3-2 完成。
-7. 3-2 未完成前，不进入 3-3 app 装配与启动验收。
+开始阶段 3-4：tag-service Dubbo Provider 源码级实现与验收，包括：
+1. 先打开 group-buy-tag-api 的 ITagQueryService、TagQueryRequestDTO、TagQueryResponseDTO，确认 RPC 契约是否适合 Provider 实现。
+2. 打开 group-buy-tag-trigger 的 POM 和源码目录，确认当前是否已有 Dubbo Provider 实现类。
+3. 打开 group-buy-tag-app 的 POM、启动类、application.yml、application-dev.yml，确认 app 是否具备承载 Dubbo Provider 的装配位置。
+4. 如果需要引入 Dubbo / Nacos 相关 Maven 依赖，必须先说明依赖设计，再修改 POM。
+5. Dubbo 注解只允许出现在 trigger 入站适配器，不能污染 api、domain、infrastructure。
+6. Provider 应该实现 ITagQueryService，内部调用 domain 的 ITagService.matchCrowdTag。
+7. Provider 需要完成请求参数校验、DTO 转换和响应封装，不能写空实现、伪实现或直接绕过 domain 访问 Redis / MyBatis。
+8. 3-4 第一小步只做 Dubbo Provider 源码级闭环和本服务启动装配检查；不直接进入 activity / trade 消费方改造，不直接做主链路替换。
 
 请你根据我接下来给出的当前阶段，带我一步一步完成。请先检查，再引导，不要直接替我完成所有代码。
 ```
@@ -714,7 +725,9 @@ group-buy-microservice/
 
 ```text
 【当前阶段】
-我现在要做：继续阶段 3-2：tag-service infrastructure / Repository 最小闭环。当前 3-2 还没有完成，明天第一步必须先做源码级验收和修正，不能直接进入 3-3。
+我现在要做：开始阶段 3-4：tag-service Dubbo Provider 源码级实现与验收。阶段 3-3 的源码级装配验收和启动验收已经完成，并已沉淀检查点文档：docs/microservice/08-stage-3-3-tag-app-assembly-checkpoint.md。
+
+3-4 的第一步必须先做源码级契约与依赖设计检查，不要先跑 Maven，不要直接启动服务，不要直接进入 activity / trade 消费方改造。
 
 【我已经完成】
 1. 我已经创建了新微服务项目目录：
@@ -782,37 +795,69 @@ group-buy-microservice/
 
 17. domain 当前仍不依赖 Dubbo、MyBatis、Redis、Redisson、Spring Web、Nacos。
 
-18. 阶段 3-2 已经开始，但尚未完成最终验收。
+18. 阶段 3-2：tag-service infrastructure / Repository 最小闭环已经完成源码级验收，并已完成检查点文档：
+    docs/microservice/07-stage-3-2-tag-infrastructure-repository-checkpoint.md
 
-19. 3-2 当前已经做了这些内容：
+19. 3-2 已经完成这些内容：
     - 父 POM 已管理 MyBatis、MySQL、Redisson、Guava 版本
     - group-buy-tag-infrastructure 已引入 MyBatis、MySQL、Redisson、Guava、Lombok
     - 已迁移 CrowdTags、CrowdTagsDetail、CrowdTagsJob
     - 已迁移 ICrowdTagsDao、ICrowdTagsDetailDao、ICrowdTagsJobDao
     - 已迁移 crowd_tags_mapper.xml、crowd_tags_job_mapper.xml、crowd_tags_detail_mapper.xml
     - 已新增 RedisClientConfig、RedisClientConfigProperties、TagBitmapUtils
-    - TagRepository 当前已有四个方法的核心实现
+    - TagRepository 四个方法已经完成真实实现
+    - RedisClientConfig.toRedisAddresses 已补齐空节点过滤后二次校验和 trim 处理
+    - ITagQueryService 模板 TODO 已清理
+    - tag_user 密码已与初始化 SQL 对齐
+    - queryTagIdByUserId 已从 DAO/XML 删除
+
+20. 3-2 当前仍记录这些后续风险，但不阻塞 3-2 收口：
+    - DB 与 Redis bitmap 非同一事务，可能短暂不一致
+    - crowd_tags_detail 普通批量 insert 遇到重复 tagId + userId 可能触发重复键异常
+    - bitmap offset 使用 hash + 取模，存在低概率碰撞
+    - TagService 批次任务中的用户列表仍是临时模拟数据，后续需要接入真实规则来源
+
+21. 阶段 3-3：tag-service app 装配与启动验收已经完成源码级验收和启动验收，并已完成检查点文档：
+    docs/microservice/08-stage-3-3-tag-app-assembly-checkpoint.md
+
+22. 3-3 已经完成这些内容：
+    - 新增 TagApplication 启动类
+    - 新增 DomainServiceConfig，由 app 层装配 ITagService -> TagService
+    - group-buy-tag-app 显式引入 spring-boot-starter-web
+    - group-buy-tag-app 新增 spring-boot-maven-plugin
+    - 修正 spring.datasource.hikari 与 spring.datasource.type 配置层级
+    - 补齐 redis.sdk.config.password，默认值为 xuele_redis_123456
+    - 将 dev 默认 Redis host 调整为 127.0.0.1，port 为 16379
+
+23. 3-3 已确认：
+    - TagApplication 位于 cn.xuele.tag 根包下，可以扫描 app、trigger、infrastructure、domain
+    - TagService 没有添加 @Service，domain 仍保持纯净
+    - TagRepository、RedisClientConfig、MyBatis DAO / Mapper XML 能被 app 装配
+    - 用户已在公司环境反馈编译通过，Redis 配置修正后服务可以启动
+
+24. 下一步进入阶段 3-4：tag-service Dubbo Provider 源码级实现与验收。
 
 【我当前需要完成的事情】
-1. 请先做 3-2 的源码级验收，不要先跑 Maven，也不要直接说进入 3-3。
+1. 请先做 3-4 的源码级契约与依赖设计检查，不要先跑 Maven，不要启动服务，也不要直接进入 activity / trade 消费方改造。
 2. 请说明你要看哪些文件、为什么看、本次检查目标是什么。
 3. 请重点检查：
-   - TagRepository 四个方法是否真实实现，是否符合 ITagRepository 的业务语义
-   - 是否仍存在空实现、伪实现、TODO、错误兜底或边界泄漏
-   - RedisClientConfig 是否支持 standalone / cluster，cluster 节点转换和空节点校验是否可靠
-   - RedisClientConfigProperties 与 application-dev.yml 的配置绑定是否一致
-   - TagBitmapUtils 的 key 前缀和 offset 算法是否只留在 infrastructure
-   - DAO / PO / Mapper XML 的 namespace、方法名、parameterType/resultMap 是否对齐
-   - MyBatis、Redis、Redisson、Spring 相关依赖是否只进入 infrastructure，没有污染 api、domain、common-types
-4. 请明确判断 3-2 是否完成；如果没有完成，请列出剩余小问题和下一步小任务。
-5. 只有源码级验收通过后，才允许做 Maven 编译等命令级验收。
-6. 3-2 未完成前，不要进入 3-3 app 装配、启动类、服务启动、Dubbo、Nacos。
+   - group-buy-tag-api 的 ITagQueryService、TagQueryRequestDTO、TagQueryResponseDTO 是否适合作为 Dubbo Provider 契约
+   - group-buy-tag-trigger 当前是否已有 Provider 实现类
+   - Provider 应该放在哪个包、实现哪个接口、注入哪个 domain 服务
+   - Provider 是否应该只调用 ITagService.matchCrowdTag，不允许绕过 domain 直接访问 Redis / MyBatis
+   - Dubbo 注解应该只出现在 trigger 入站适配器，不能污染 api、domain、infrastructure、common-types
+   - group-buy-tag-trigger / group-buy-tag-app 是否需要新增 Dubbo 相关依赖
+   - 如果需要引入 Dubbo / Nacos 依赖，请先说明依赖坐标、版本来源、父 POM 是否变化、哪些子模块需要新增、哪些模块不应该新增
+   - application.yml、application-dev.yml 是否需要新增 Dubbo Provider 配置；如果需要，先讲配置边界和原因
+4. 请明确判断 3-4 是否已经具备 Provider 源码实现条件；如果没有，请列出剩余小问题和下一步小任务。
+5. 第一小步只做 Provider 源码级闭环和本服务启动装配检查；暂不做消费者调用，暂不改 activity / trade，暂不做主链路替换。
+6. 只有 Provider 源码级检查通过后，才允许让我在公司环境执行 Maven 编译、服务启动等命令级验收。
 
 【我遇到的问题】
-3-2 已经有一部分代码，但还没有完成源码级验收。
-我需要确认 Repository 不是只编译通过，而是真的实现了 tag-service 的基础设施闭环。
-我也需要确认 Redis 单机 / 集群配置不会把 Repository 污染成依赖具体部署模式的代码。
-另外，之前出现过只用 Maven 编译结果判断阶段完成的问题，所以这次必须先看实际源码。
+3-3 已经完成源码级装配验收和启动验收，现在需要进入 3-4。
+我需要在 trigger 层实现 tag-service 的 Dubbo Provider，让它实现 api 模块里的 ITagQueryService，并调用 domain 层的 ITagService。
+我尤其需要确认 Dubbo 注解、Dubbo 依赖、Provider 实现、DTO 转换、异常语义和配置都放在正确边界内。
+3-4 未完成前，不要进入 activity / trade 消费方改造，不要直接做主链路替换。
 
 【我的要求】
 如果我在新对话里没有明确说明当前是公司环境还是家环境，而你需要读取、检查、修改项目文件，或者需要执行命令，请必须先问我当前使用公司路径还是家路径，不要自行假设路径。
@@ -821,7 +866,7 @@ group-buy-microservice/
 如果本阶段需要新增、删除或调整 Maven 依赖，请先说明具体依赖坐标、父 POM 是否变化、哪些子模块 POM 需要新增、哪些模块不应该新增，以及为什么这样设计；不要直接改 POM。
 请你先不要直接写完整代码。
 请你先说明要检查哪些文件、为什么检查、检查目标是什么。
-检查后请按顺序输出：源码实现是否完成 -> 边界是否正确 -> 命令验证是否需要执行 -> 剩余问题 -> 下一步小任务。
+检查后请按顺序输出：依赖设计是否合理 -> Provider 源码是否完成 -> 边界是否正确 -> 命令验证是否需要执行 -> 剩余问题 -> 下一步小任务。
 每一步请先讲为什么，再讲我该怎么做，最后讲怎么验证。
 ```
 
