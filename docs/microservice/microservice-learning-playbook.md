@@ -181,8 +181,21 @@ api -> domain / infrastructure / trigger
 5. 每次只推进一个小阶段，不一次性展开过多内容。
 6. 如果设计不合理，AI 要直接指出，并说明更好的方案。
 7. 项目标准按企业级要求执行，不按简单学习 Demo 标准执行。
+8. 不以“先最小实现、后面再优化”为默认策略。每个小阶段都应在当前认知范围内尽量采用边界清晰、命名准确、职责合理的最佳实现；如果已经发现接口职责混杂、命名不清、依赖边界不合理、微服务归属不清等问题，应在当前阶段及时纠偏，不应把明显设计债留到后续代码增多后再改。
 
-### 3.2 检查代码和结构时的规则
+### 3.2 前置最佳设计规则
+
+本项目以学习企业级微服务架构能力为目标，不追求 Demo 式快速跑通。
+
+推进每个小阶段时，必须遵守：
+
+- 小步推进不等于低标准实现。每一步范围可以小，但该范围内的设计要尽量正确。
+- 如果当前阶段已经能判断出更合理的端口拆分、命名方式、模块归属或依赖边界，应优先采用更合理方案。
+- 不允许用“后面代码多了再重构”“先放一起简单一点”“先跑通再说”作为保留明显坏设计的理由。
+- 可以暂缓的是当前阶段信息不足、无法稳定判断的问题；不能暂缓的是已经明确违反六边形架构、微服务边界、职责单一或命名语义的问题。
+- AI 给出建议时，应明确区分“必须当前修正的问题”和“可以后续在信息更充分时演进的问题”。前者不能被包装成后续优化。
+
+### 3.3 检查代码和结构时的规则
 
 AI 检查项目前，需要先说明：
 
@@ -198,7 +211,7 @@ AI 检查项目前，需要先说明：
 4. 下一步任务
 5. 验证方式
 
-### 3.3 Maven 依赖变更前置说明规则
+### 3.4 Maven 依赖变更前置说明规则
 
 如果某一步需要新增、删除或调整 Maven 依赖，AI 不能直接修改 POM。
 
@@ -223,7 +236,7 @@ AI 检查项目前，需要先说明：
 domain / api / common-types 不能因为实现方便而被基础设施依赖污染。
 ```
 
-### 3.4 每阶段验收规则
+### 3.5 每阶段验收规则
 
 每个阶段都必须有明确验收标准。
 
@@ -263,7 +276,7 @@ AI 必须打开实际源码，按方法逐项说明是否实现、实现逻辑�
 - MySQL / Redis / MQ 状态可验证
 - 代码依赖方向符合六边形架构
 
-### 3.5 每阶段文档沉淀
+### 3.6 每阶段文档沉淀
 
 每个阶段完成后，需要沉淀：
 
@@ -705,6 +718,7 @@ E:\Code\Code4Java\group-buy-microservice
 11. 如果需要新增、删除或调整 Maven 依赖，请先说明具体依赖坐标、父 POM 是否变化、哪些子模块 POM 需要新增、哪些模块不应该新增，以及为什么这样设计；未经说明不要直接改 POM。
 12. 每个阶段结束时，要帮我总结：我做了什么、为什么这么做、面试怎么讲、还有什么风险。
 13. 回答使用中文，风格像老师带学生做真实企业项目。
+14. 不要把“先最小实现、后面再优化”作为默认建议。每个小阶段都要在当前认知范围内采用边界清晰、命名准确、职责合理的最佳实现；如果已经发现接口职责混杂、命名不清、模块归属不合理或微服务边界错误，应当前阶段直接指出并要求修正，不要建议留到后面代码变多后再改。
 
 当前项目总体规划：
 group-buy-microservice/
@@ -734,7 +748,7 @@ group-buy-microservice/
 这段需要随着阶段推进维护。当前快照如下：
 
 ```text
-截至 2026-06-03 当前进度：
+截至 2026-06-05 当前进度：
 
 1. 阶段 0：整体规划已完成，已确定按业务能力纵向拆分，新项目为独立微服务项目。
 2. 阶段 1：group-buy-common 已完成，复盘文档：docs/microservice/04-stage-1-common-review.md。
@@ -746,7 +760,13 @@ group-buy-microservice/
 8. 阶段 3 已正式完结：tag-service provider 侧迁移完成。
 9. tag-service 当前具备独立启动、独立数据访问、Redis bitmap 查询、领域服务编排、Dubbo Provider 暴露和 Nacos 注册能力。
 10. 当前不改旧单体主链路，不写临时 RPC Test；真实 RPC 消费验证放到后续新微服务拆分阶段。
-11. 下一阶段进入阶段 4：group-buy-activity-service 拆分，并在新 activity-service 中作为消费者调用 tag-service。
+11. 阶段 4 已开始：group-buy-activity-service 骨架已搭建，POM 依赖已按 tag-service 模式补齐，groupId 已统一为 `cn.xuele`。
+12. activity-service 当前按 `api / domain / infrastructure / trigger / app` 五层组织；domain 当前保持纯净，只依赖 `group-buy-common-types` 和 Lombok。
+13. 阶段 4-1：activity-service Domain 第一批模型与端口已完成，包括 `MarketProductEntity`、`TrialBalanceEntity`、`SkuVO`、`SCSkuActivityVO`、`GroupBuyActivityDiscountVO`、`DiscountTypeEnum`、`TagScopeEnumVO`、`IActivityRepository`、`IActivityTrialControlPort`、`ITagQueryPort`。
+14. 已明确 Repository / Port 边界：`IActivityRepository` 只表达活动、商品、优惠数据查询；`IActivityTrialControlPort` 表达试算降级与灰度控制，后续由 Nacos 配置中心实现；`ITagQueryPort` 表达用户标签命中判断，后续由 infrastructure 调用 tag-service API 实现。
+15. 阶段 4-2：activity-service 试算服务与折扣策略迁移进行中；已迁 `IActivityTrialService`、`ActivityTrialService`、`IActivityTrialRuleEngine`、`IDiscountCalculateService`、`DiscountMarketPlanEnum`、`AbstractDiscountCalculateService`，并创建 4 个折扣策略占位类。
+16. 当前未完成：`DirectReductionDiscountCalculator`、`FullReductionDiscountCalculator`、`FixedPriceDiscountCalculator`、`RateDiscountCalculator` 仍为空实现，下一步应先实现这 4 个优惠策略，并继续保持 domain 无 Spring / Dubbo / MyBatis / Redis / Nacos 污染。
+17. 当前环境为公司环境时，只做源码、结构、依赖边界验收，不主动执行 Maven 编译或服务启动；编译由用户自行执行后反馈。
 ```
 
 ### 9.3 当前任务模板
