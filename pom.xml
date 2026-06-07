@@ -15,9 +15,6 @@
         <module>xuele-group-buy-infrastructure</module>
         <module>xuele-group-buy-types</module>
         <module>xuele-group-buy-api</module>
-        <module>xuele-group-buy-tag-service</module>
-        <module>xuele-group-buy-tag-api</module>
-        <module>rpc-test</module>
     </modules>
 
     <repositories>

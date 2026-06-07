@@ -61,6 +61,25 @@ E:\Code\Code4Java\group-buy-microservice
 更重要的是能讲清楚为什么这样拆、为什么这样设计、解决了什么问题、还有什么风险。
 ```
 
+底层推进原则：
+
+```text
+最佳实践优先，不以最小实现作为最终设计。
+保留旧项目中有价值的架构亮点，但必须在微服务边界和六边形架构下重新落地。
+迁移不是复制粘贴，必须主动识别旧业务中不合理的依赖、边界和职责混杂，并在当前阶段尽早修正。
+每推进一个能力，都要同时思考是否能沉淀新的项目亮点、面试表达点和企业级设计点。
+```
+
+强制提醒：
+
+```text
+如果某个实现方案只是为了快速跑通，却会损失项目亮点、架构表达或后续扩展性，AI 必须明确指出，并优先给出更符合企业实践的方案。
+
+规则树、责任链、策略模式、六边形端口、服务自治、数据归属、缓存归属、RPC 契约、配置治理、故障边界等，都是本项目需要主动保留和挖掘的亮点。
+
+不能为了少写代码，把原本有业务表达价值的规则树/策略链退化成一个大方法。
+```
+
 ## 2. 总体项目规划
 
 新项目采用“按业务能力纵向拆分”的方式组织，每个业务服务都是独立工程，服务内部继续保持 DDD / 六边形结构。
@@ -285,6 +304,43 @@ AI 必须打开实际源码，按方法逐项说明是否实现、实现逻辑�
 阶段复盘文档完成后，新的阶段必须开启新对话推进，避免上下文混杂。
 
 如果用户提醒“阶段是否完成”或“需要复盘”，AI 必须先收口当前阶段，不继续推进新阶段任务。
+```
+
+### 3.6 最佳实践与亮点保留规则
+
+本项目不是 Demo 迁移，也不是以最少代码跑通功能为目标。
+
+每次迁移旧单体能力时，AI 必须同时做三件事：
+
+1. 识别旧代码中值得保留的设计亮点。
+2. 识别旧代码中不适合微服务拆分后继续照搬的问题。
+3. 给出符合当前微服务边界、六边形架构和面试表达价值的改造方案。
+
+必须保留和升级的项目亮点：
+
+- 活动试算链路中的规则树 / 策略编排思想
+- 优惠计算中的策略模式
+- 领域层只依赖端口，不感知基础设施实现
+- 标签能力通过 `ITagQueryPort` 接入，不直接访问标签表或 Redis bitmap
+- DCC / 灰度 / 降级通过控制端口接入，不混入 Repository
+- 缓存作为独立适配能力设计，不让 PO 或 Repository 过早承担缓存 key 职责
+
+禁止行为：
+
+```text
+为了方便，把完整业务链路写成一个大 service 方法。
+为了照搬旧代码，把 Spring @Service、ThreadPoolExecutor、Redis、Dubbo、MyBatis Mapper 带入 domain。
+为了复用，把只服务某个业务的规则树框架、节点、业务模型塞进 common-types。
+为了跑通，把旧单体中已经发现的边界问题继续迁入新微服务。
+```
+
+正确做法：
+
+```text
+旧业务语义要保留。
+旧技术结构要审查后再决定是否保留。
+旧项目亮点要在新架构下升级，而不是简单复制。
+新实现必须能讲清楚：为什么这样拆、为什么这样编排、为什么这个边界更清晰。
 ```
 
 ## 4. 六边形架构约束
@@ -552,6 +608,55 @@ tag-service provider 侧完成即可收口。
 - 通过 Dubbo 调用 `ITagQueryService`
 - 不直接访问 tag-service 拥有的标签表或标签 bitmap
 
+阶段 4 底层要求：
+
+```text
+activity-service 迁移必须保留“活动试算规则树 + 优惠策略模式”这个项目亮点。
+
+不能把旧规则树退化成 ActivityTrialRuleEngine 一个大方法。
+
+可以重构旧规则树，但重构目标是：
+1. domain 纯 Java，不加 Spring @Service。
+2. 不依赖旧单体的 tree 框架，除非后续专门设计一个纯净、稳定、可复用的规则树基础包。
+3. 不在 domain 引入 ThreadPoolExecutor、Dubbo、Redis、MyBatis、Nacos。
+4. 标签判断只依赖 ITagQueryPort。
+5. 活动数据读取只依赖 IActivityRepository。
+6. 灰度、降级、试算控制只依赖 IActivityTrialControlPort。
+7. 折扣计算通过 Map<String, IDiscountCalculateService> 路由。
+```
+
+推荐新规则树结构：
+
+```text
+ActivityTrialRuleEngine
+  -> RootNode
+  -> DataLoadNode
+  -> TrialControlNode
+  -> TagNode
+  -> MarketNode
+  -> EndNode
+```
+
+职责边界：
+
+| 节点 | 职责 |
+| --- | --- |
+| `ActivityTrialRuleEngine` | 规则树入口，只创建上下文并调用根节点 |
+| `RootNode` | 校验 `userId/goodsId/source/channel` 等试算入参 |
+| `DataLoadNode` | 通过 `IActivityRepository` 加载商品活动关系、有效活动优惠、SKU |
+| `TrialControlNode` | 通过 `IActivityTrialControlPort` 处理降级、灰度、切量 |
+| `TagNode` | 通过 `ITagQueryPort` 判断用户是否命中标签 |
+| `MarketNode` | 通过优惠策略 Map 路由 `ZJ/MJ/N/ZK` 并计算价格 |
+| `EndNode` | 组装 `TrialBalanceEntity` |
+
+旧单体规则树迁移原则：
+
+```text
+旧业务流程要参照。
+旧技术依赖不照搬。
+旧边界问题要在微服务迁移时修正。
+```
+
 验收：
 
 ```text
@@ -705,6 +810,10 @@ E:\Code\Code4Java\group-buy-microservice
 11. 如果需要新增、删除或调整 Maven 依赖，请先说明具体依赖坐标、父 POM 是否变化、哪些子模块 POM 需要新增、哪些模块不应该新增，以及为什么这样设计；未经说明不要直接改 POM。
 12. 每个阶段结束时，要帮我总结：我做了什么、为什么这么做、面试怎么讲、还有什么风险。
 13. 回答使用中文，风格像老师带学生做真实企业项目。
+14. 最佳实践优先，不以最小实现作为最终设计；如果某个方案只是为了快速跑通，但会损失项目亮点、架构表达或后续扩展性，必须明确指出并给出更好的方案。
+15. 迁移旧单体时，不是复制粘贴，而是保留旧业务语义和设计亮点，同时修正旧代码中不适合微服务拆分后的边界问题。
+16. 必须主动保留和升级项目亮点，例如规则树、责任链、策略模式、六边形端口、服务自治、数据归属、缓存归属、RPC 契约、配置治理、故障边界等。
+17. 不能为了少写代码，把原本有业务表达价值的规则树、策略链或领域编排退化成一个大方法。
 
 当前项目总体规划：
 group-buy-microservice/
@@ -734,7 +843,7 @@ group-buy-microservice/
 这段需要随着阶段推进维护。当前快照如下：
 
 ```text
-截至 2026-06-03 当前进度：
+截至 2026-06-07 23:53 当前进度：
 
 1. 阶段 0：整体规划已完成，已确定按业务能力纵向拆分，新项目为独立微服务项目。
 2. 阶段 1：group-buy-common 已完成，复盘文档：docs/microservice/04-stage-1-common-review.md。
@@ -746,7 +855,122 @@ group-buy-microservice/
 8. 阶段 3 已正式完结：tag-service provider 侧迁移完成。
 9. tag-service 当前具备独立启动、独立数据访问、Redis bitmap 查询、领域服务编排、Dubbo Provider 暴露和 Nacos 注册能力。
 10. 当前不改旧单体主链路，不写临时 RPC Test；真实 RPC 消费验证放到后续新微服务拆分阶段。
-11. 下一阶段进入阶段 4：group-buy-activity-service 拆分，并在新 activity-service 中作为消费者调用 tag-service。
+11. 阶段 4：group-buy-activity-service 拆分已开始。
+12. 阶段 4-1-1：activity-service infrastructure 包结构、PO、DAO 空接口、Mapper XML 基础 dataMap、ActivityRepository 空壳已完成。
+13. 阶段 4-1-2：activity-service 自有表查询能力已完成，涉及 group_buy_activity、group_buy_discount、sc_sku_activity、sku。
+14. 阶段 4-1-2 中已主动修正旧单体不合理点：sku 查询改为 goodsId + source + channel；有效活动查询增加 status + start_time/end_time；ActivityRepository 不再混入标签、Redis bitmap、DCC、缓存逻辑；PO 不放缓存 key。
+15. 阶段 4-1-3A：优惠策略已完成。DirectReductionDiscountCalculator、FullReductionDiscountCalculator、FixedPriceDiscountCalculator、RateDiscountCalculator 均已实现，domain 不加 Spring 注解。
+16. 家环境已执行过 activity-service `mvn -q -DskipTests compile`，通过。
+17. 当前代码中 `ActivityTrialRuleEngine` 只有空架子，存在 TODO 和 return null。
+18. 下一步进入阶段 4-1-3B：迁移活动试算规则树。必须保留规则树亮点，不能把完整链路写成一个大方法。
+19. 阶段 4-1-3B 推荐先补 `GroupBuyActivityDiscountVO.isVisible()` / `isEnable()`，再创建纯 domain 规则树上下文和节点。
+20. 后续 tag-service RPC 消费尚未开始；`ITagQueryPort` 只有 domain 端口，Dubbo adapter 后置。
+```
+
+### 9.2.1 阶段 4 当前代码快照
+
+家环境新项目路径：
+
+```text
+E:\Code\Code4Java\group-buy-microservice\group-buy-activity-service
+```
+
+公司环境新项目路径：
+
+```text
+D:\Code4J\group-buy-microservice\group-buy-activity-service
+```
+
+当前已完成源码：
+
+```text
+group-buy-activity-domain
+  adapter/repository/IActivityRepository.java
+  adapter/port/ITagQueryPort.java
+  adapter/port/IActivityTrialControlPort.java
+  service/discount/IDiscountCalculateService.java
+  service/discount/AbstractDiscountCalculateService.java
+  service/discount/impl/DirectReductionDiscountCalculator.java
+  service/discount/impl/FullReductionDiscountCalculator.java
+  service/discount/impl/FixedPriceDiscountCalculator.java
+  service/discount/impl/RateDiscountCalculator.java
+  service/trial/ActivityTrialService.java
+  service/trial/IActivityTrialRuleEngine.java
+  service/trial/ActivityTrialRuleEngine.java  当前为空架子
+
+group-buy-activity-infrastructure
+  dao/po/GroupBuyActivity.java
+  dao/po/GroupBuyDiscount.java
+  dao/po/SCSkuActivity.java
+  dao/po/Sku.java
+  dao/IGroupBuyActivityDao.java
+  dao/IGroupBuyDiscountDao.java
+  dao/ISCSkuActivityDao.java
+  dao/ISkuDao.java
+  adapter/repository/ActivityRepository.java
+  resources/mybatis/mapper/group_buy_activity_mapper.xml
+  resources/mybatis/mapper/group_buy_discount_mapper.xml
+  resources/mybatis/mapper/sc_sku_activity_mapper.xml
+  resources/mybatis/mapper/sku_mapper.xml
+```
+
+当前明确未完成：
+
+```text
+ActivityTrialRuleEngine 仍是 TODO + return null。
+尚未创建 ActivityTrialContext。
+尚未创建 RootNode/DataLoadNode/TrialControlNode/TagNode/MarketNode/EndNode。
+GroupBuyActivityDiscountVO 尚未迁移旧单体中的 isVisible() / isEnable() 行为。
+app 层 DomainServiceConfig 尚未创建。
+ITagQueryPort 的 Dubbo infrastructure adapter 尚未创建。
+activity-api 尚未定义对外试算 RPC 契约和 DTO。
+trigger 尚未提供 HTTP/Dubbo 入站适配器。
+```
+
+### 9.2.2 明天公司环境接力任务
+
+如果明天在公司环境继续，当前任务是：
+
+```text
+【当前阶段】
+阶段 4-1-3B：activity-service 活动试算规则树迁移。
+
+【本次目标】
+保留旧单体活动试算规则树亮点，但改造成符合微服务边界的纯 domain 规则树。
+
+【优先检查文件】
+1. group-buy-activity-domain/src/main/java/cn/xuele/activity/domain/service/trial/ActivityTrialRuleEngine.java
+   目的：确认当前仍是规则树入口空架子。
+
+2. group-buy-activity-domain/src/main/java/cn/xuele/activity/domain/model/valobj/GroupBuyActivityDiscountVO.java
+   目的：补回旧单体 isVisible() / isEnable() 业务语义。
+
+3. 旧单体 xuele-group-buy-domain/src/main/java/cn/xuele/domain/activity/model/valobj/GroupBuyActivityDiscountVO.java
+   目的：对照 tagScope 可见/可参与规则。
+
+4. 旧单体 xuele-group-buy-domain/src/main/java/cn/xuele/domain/activity/service/trial/node/*
+   目的：参照旧规则树业务流程，但不照搬 Spring/Redis/Repository 混杂实现。
+
+【下一步小任务】
+1. 新建 ActivityTrialContext，承载规则树上下文。
+2. 新建纯 domain 节点接口和抽象节点。
+3. 新建 RootNode、DataLoadNode、TrialControlNode、TagNode、MarketNode、EndNode。
+4. ActivityTrialRuleEngine 只作为规则树入口，不写完整大方法。
+
+【严格禁止】
+1. 不把完整试算链路写进 ActivityTrialRuleEngine 一个大方法。
+2. domain 不加 @Service / @Component。
+3. domain 不依赖 MyBatis / Redis / Dubbo / Spring Web / Nacos。
+4. TagNode 不访问 crowd_tags、crowd_tags_detail、Redis bitmap。
+5. DataLoadNode 不使用 DAO/Mapper，只使用 IActivityRepository。
+6. TrialControlNode 不直接读取配置中心实现，只使用 IActivityTrialControlPort。
+```
+
+公司环境验收提醒：
+
+```text
+如果当前是公司环境，AI 只做源码、结构、依赖边界验收，不主动执行 Maven 编译。
+编译由用户在公司环境自行执行后反馈。
 ```
 
 ### 9.3 当前任务模板
@@ -765,6 +989,7 @@ group-buy-microservice/
 5. 如果涉及服务间调用，重点检查消费者只依赖 provider 的 api jar。
 6. 不要修改旧单体项目主链路；旧单体只作为阅读和迁移参考。
 7. 阶段完成前先做源码级验收，再做命令级验收。
+8. 必须按最佳实践推进，保留并升级旧项目亮点，不能为了最小实现牺牲规则树、策略模式、服务边界和面试表达价值。
 
 【我遇到的问题】
 【填写当前卡点或目标，例如：需要先从旧单体阅读活动相关代码，判断 activity-service 的服务边界和表归属。】
@@ -774,6 +999,7 @@ group-buy-microservice/
 如果当前是公司环境，请只做结构、代码、配置、依赖方向等文件级验收，不要主动执行 Maven 编译、服务启动等构建命令；编译由我自己执行后反馈。
 如果当前是家环境，你可以执行 Maven 编译、安装、服务启动等命令，并把命令结果纳入验收结论。
 如果本阶段需要新增、删除或调整 Maven 依赖，请先说明具体依赖坐标、父 POM 是否变化、哪些子模块 POM 需要新增、哪些模块不应该新增，以及为什么这样设计；不要直接改 POM。
+请始终记住：最佳实践优先，保留项目亮点，主动挖掘新亮点；迁移不是照搬，必须修正旧代码中不合理的边界。
 请你先不要直接写完整代码。
 请你先说明要检查哪些文件、为什么检查、检查目标是什么。
 检查后请按顺序输出：依赖设计是否合理 -> 本阶段源码实现是否完成 -> 边界是否正确 -> 命令验证是否需要执行 -> 剩余问题 -> 下一步小任务。
