@@ -200,6 +200,8 @@ api -> domain / infrastructure / trigger
 5. 每次只推进一个小阶段，不一次性展开过多内容。
 6. 如果设计不合理，AI 要直接指出，并说明更好的方案。
 7. 项目标准按企业级要求执行，不按简单学习 Demo 标准执行。
+8. 每次回复先给一个简短小结，再进入结论、问题和下一步任务。
+9. 业务相关任务要优先按真实生产要求思考，主动修正原设计里不合理的边界、职责和数据归属。
 
 ### 3.2 检查代码和结构时的规则
 
@@ -211,11 +213,17 @@ AI 检查项目前，需要先说明：
 
 检查后输出顺序：
 
+0. 当前进度小结
 1. 结论
 2. 发现的问题
 3. 为什么是问题
 4. 下一步任务
 5. 验证方式
+
+当前进度小结要求：
+
+- 只用 1 到 3 句，简单概括这一步看到了什么、卡在哪里、下一步做什么。
+- 重点是先把对话收拢，不要一上来就铺太长的分析。
 
 ### 3.3 Maven 依赖变更前置说明规则
 
@@ -342,6 +350,26 @@ AI 必须打开实际源码，按方法逐项说明是否实现、实现逻辑�
 旧项目亮点要在新架构下升级，而不是简单复制。
 新实现必须能讲清楚：为什么这样拆、为什么这样编排、为什么这个边界更清晰。
 ```
+
+### 3.7 回复格式约定
+
+为了避免后续回复过于简略，统一补充以下约定：
+
+1. 每次回复都要先给一个简短小结，说明当前进展和本次结论。
+2. 下一步任务不能只写标题，要按点拆开，并尽量写清楚：
+   - 要做什么
+   - 为什么要做
+   - 怎么做
+   - 怎么验证
+   - 这一步在业务上修正了什么不合理点
+3. 涉及业务逻辑时，优先按真实生产中的要求写，不按学习 Demo 的最低实现写。
+4. 如果原设计里有不合理边界，要明确指出，并给出修正方向，不要只给“能跑通”的方案。
+5. 需要引用原代码位置时，只写“模块 / 包 / 类名”的短格式，不要再输出很长的完整包路径。
+6. 代码位置示例：
+   - `group-buy-activity-domain / service / trial / ActivityTrialRuleEngine`
+   - `group-buy-activity-domain / model / valobj / GroupBuyActivityDiscountVO`
+   - `xuele-group-buy-domain / service / trial / node / TagNode`
+7. 如果下一步任务涉及多个点，每个点都要单独说明，不要合并成一段笼统描述。
 
 ## 4. 六边形架构约束
 
@@ -843,7 +871,7 @@ group-buy-microservice/
 这段需要随着阶段推进维护。当前快照如下：
 
 ```text
-截至 2026-06-07 23:53 当前进度：
+截至 2026-06-08 当前进度：
 
 1. 阶段 0：整体规划已完成，已确定按业务能力纵向拆分，新项目为独立微服务项目。
 2. 阶段 1：group-buy-common 已完成，复盘文档：docs/microservice/04-stage-1-common-review.md。
@@ -861,10 +889,23 @@ group-buy-microservice/
 14. 阶段 4-1-2 中已主动修正旧单体不合理点：sku 查询改为 goodsId + source + channel；有效活动查询增加 status + start_time/end_time；ActivityRepository 不再混入标签、Redis bitmap、DCC、缓存逻辑；PO 不放缓存 key。
 15. 阶段 4-1-3A：优惠策略已完成。DirectReductionDiscountCalculator、FullReductionDiscountCalculator、FixedPriceDiscountCalculator、RateDiscountCalculator 均已实现，domain 不加 Spring 注解。
 16. 家环境已执行过 activity-service `mvn -q -DskipTests compile`，通过。
-17. 当前代码中 `ActivityTrialRuleEngine` 只有空架子，存在 TODO 和 return null。
-18. 下一步进入阶段 4-1-3B：迁移活动试算规则树。必须保留规则树亮点，不能把完整链路写成一个大方法。
-19. 阶段 4-1-3B 推荐先补 `GroupBuyActivityDiscountVO.isVisible()` / `isEnable()`，再创建纯 domain 规则树上下文和节点。
-20. 后续 tag-service RPC 消费尚未开始；`ITagQueryPort` 只有 domain 端口，Dubbo adapter 后置。
+17. 阶段 4-1-3B：activity-service 活动试算规则树节点迁移已完成，检查点：docs/microservice/10-stage-4-1-3B-activity-trial-rule-tree-nodes-checkpoint.md。
+18. 阶段 4-1-3B 已引入 `group-buy-common-design` 纯 Java 规则树基础包，包含 `StrategyHandler`、`StrategyMapper`、`AbstractStrategyRouter`。
+19. activity-domain 已新增 `ActivityTrialContext` 和 `AbstractActivityTrialSupport`，用 `AbstractActivityTrialSupport` 固定活动试算规则树泛型，避免每个节点重复声明泛型。
+20. activity-domain 已完成 `RootNode`、`DataLoadNode`、`TrialControlNode`、`TagNode`、`MarketNode`、`EndNode` 六个节点。
+21. `GroupBuyActivityDiscountVO` 已补充 `isVisible()` / `isEnable()`；`group-buy-common-types` 已新增 `StringUtils.isBlank()`，避免为了字符串判空引入 Apache Commons。
+22. `ResponseCode` 已新增活动试算相关错误码：`NO_DISCOUNT_CALCULATOR`、`NO_ACTIVITY_MARKET_CONFIG`、`ACTIVITY_TRIAL_DOWNGRADE`、`ACTIVITY_TRIAL_GRAY_RANGE_BLOCKED`。
+23. `TagNode` 已按真实业务拆分活动门禁和优惠资格：`group_buy_activity.tag_id` 控制活动可见/可参与，`group_buy_discount.tag_id` 控制 TAG 专享优惠资格。
+24. 本阶段主动修正旧单体不合理边界：不迁移 `ErrorNode` 空兜底节点，缺失营销配置由负责节点直接抛业务异常；不迁移旧 `AbstractMultiThreadStrategyRouter`，不让 domain 父类持有线程池。
+25. activity-domain 仍保持纯净，只依赖 `common-types`、`common-design`、Lombok；没有引入 Spring、MyBatis、Redis、Dubbo、Nacos、线程池等外部技术。
+26. 当前是公司环境，本阶段只完成源码级验收，未执行 Maven 编译、服务启动或 RPC 调用。
+27. 阶段 4-1-3C 已开始：activity-domain 已完成规则树入口和领域服务入口。
+28. activity-domain 已新增 `IActivityTrialRuleEngine`、`ActivityTrialRuleEngine`、`IActivityTrialService`、`ActivityTrialService`；规则树入口只持有 `RootNode`，领域服务只依赖 `IActivityTrialRuleEngine`。
+29. `ActivityTrialContext`、`AbstractActivityTrialSupport` 已调整到 `service/trial/engine` 包下，`engine` 与 `node` 并列表达规则树支撑结构，不再挂在节点子包下。
+30. activity-infrastructure 已完成 `ActivityTrialControlPort` 基础实现，默认不降级、默认全量进入灰度；实现位于 infrastructure adapter，不污染 domain。
+31. activity-infrastructure POM 已新增 `dubbo-spring-boot-starter` 和 `group-buy-tag-api` 依赖；activity 父 POM 已管理 `group-buy-tag-api` 版本。
+32. tag-api 依赖问题已排查到环境层面：`group-buy-tag-api` target jar 中存在 `cn/xuele/api/tag/ITagQueryService.class`，但公司 Maven 当前为 Maven 3.3.9 + JDK 8，且实际本地仓库 `D:\Work\Maven\maven\repository` 未安装 `group-buy-tag-api`、`group-buy-tag-service` 父 POM、`group-buy-common-types` 等当前微服务产物。该问题暂时挂起，回家后使用 JDK 21 环境重新 install common 与 tag-service 后继续。
+33. 下一步回家继续阶段 4-1-3C：先恢复 Maven/JDK 21 与本地仓库依赖解析，再实现 `ITagQueryPort` Dubbo adapter，之后进入 app 层 `DomainServiceConfig` 手动装配。
 ```
 
 ### 9.2.1 阶段 4 当前代码快照
@@ -888,15 +929,39 @@ group-buy-activity-domain
   adapter/repository/IActivityRepository.java
   adapter/port/ITagQueryPort.java
   adapter/port/IActivityTrialControlPort.java
+  model/entity/MarketProductEntity.java
+  model/entity/TrialBalanceEntity.java
+  model/valobj/GroupBuyActivityDiscountVO.java
+  model/valobj/SCSkuActivityVO.java
+  model/valobj/SkuVO.java
+  model/valobj/TagScopeEnumVO.java
+  model/valobj/DiscountTypeEnum.java
+  model/valobj/DiscountMarketPlanEnum.java
   service/discount/IDiscountCalculateService.java
   service/discount/AbstractDiscountCalculateService.java
   service/discount/impl/DirectReductionDiscountCalculator.java
   service/discount/impl/FullReductionDiscountCalculator.java
   service/discount/impl/FixedPriceDiscountCalculator.java
   service/discount/impl/RateDiscountCalculator.java
+  service/trial/IActivityTrialService.java
   service/trial/ActivityTrialService.java
-  service/trial/IActivityTrialRuleEngine.java
-  service/trial/ActivityTrialRuleEngine.java  当前为空架子
+  service/trial/engine/IActivityTrialRuleEngine.java
+  service/trial/engine/ActivityTrialRuleEngine.java
+  service/trial/engine/ActivityTrialContext.java
+  service/trial/engine/AbstractActivityTrialSupport.java
+  service/trial/node/RootNode.java
+  service/trial/node/DataLoadNode.java
+  service/trial/node/TrialControlNode.java
+  service/trial/node/TagNode.java
+  service/trial/node/MarketNode.java
+  service/trial/node/EndNode.java
+
+group-buy-common
+  group-buy-common-types/common/StringUtils.java
+  group-buy-common-types/enums/ResponseCode.java
+  group-buy-common-design/framework/tree/StrategyHandler.java
+  group-buy-common-design/framework/tree/StrategyMapper.java
+  group-buy-common-design/framework/tree/AbstractStrategyRouter.java
 
 group-buy-activity-infrastructure
   dao/po/GroupBuyActivity.java
@@ -908,6 +973,7 @@ group-buy-activity-infrastructure
   dao/ISCSkuActivityDao.java
   dao/ISkuDao.java
   adapter/repository/ActivityRepository.java
+  adapter/port/ActivityTrialControlPort.java
   resources/mybatis/mapper/group_buy_activity_mapper.xml
   resources/mybatis/mapper/group_buy_discount_mapper.xml
   resources/mybatis/mapper/sc_sku_activity_mapper.xml
@@ -917,45 +983,79 @@ group-buy-activity-infrastructure
 当前明确未完成：
 
 ```text
-ActivityTrialRuleEngine 仍是 TODO + return null。
-尚未创建 ActivityTrialContext。
-尚未创建 RootNode/DataLoadNode/TrialControlNode/TagNode/MarketNode/EndNode。
-GroupBuyActivityDiscountVO 尚未迁移旧单体中的 isVisible() / isEnable() 行为。
 app 层 DomainServiceConfig 尚未创建。
+activity-app 启动装配尚未进入本阶段。
 ITagQueryPort 的 Dubbo infrastructure adapter 尚未创建。
+公司 Maven/JDK 环境暂未解决：当前公司命令行 Maven 为 3.3.9 + JDK 8，实际本地仓库 `D:\Work\Maven\maven\repository` 未安装当前微服务的 common/tag-api 产物，导致 activity-infrastructure 暂时解析不到 `cn.xuele.api.tag.ITagQueryService`。
 activity-api 尚未定义对外试算 RPC 契约和 DTO。
 trigger 尚未提供 HTTP/Dubbo 入站适配器。
+DataLoadNode 暂未做异步多线程优化；后续只作为性能优化单独设计，不直接搬旧单体多线程父类。
 ```
 
-### 9.2.2 明天公司环境接力任务
+### 9.2.2 下一阶段新对话接力任务
 
-如果明天在公司环境继续，当前任务是：
+如果在新对话继续，当前任务是：
 
 ```text
 【当前阶段】
-阶段 4-1-3B：activity-service 活动试算规则树迁移。
+阶段 4-1-3C：activity-service 活动试算规则树入口、领域服务与 app 装配。
 
 【本次目标】
-保留旧单体活动试算规则树亮点，但改造成符合微服务边界的纯 domain 规则树。
+在不污染 domain 的前提下，把已经完成的规则树节点串成可调用的活动试算领域能力，并在 app 层完成手动装配。
+
+本阶段只做规则树入口、领域服务、app 装配和必要端口适配设计。
+不要展开 activity-api / trigger 对外接口，也不要进入交易服务迁移。
 
 【优先检查文件】
-1. group-buy-activity-domain/src/main/java/cn/xuele/activity/domain/service/trial/ActivityTrialRuleEngine.java
-   目的：确认当前仍是规则树入口空架子。
+1. group-buy-activity-domain/src/main/java/cn/xuele/activity/domain/service/trial/*
+   目的：确认 `IActivityTrialService`、`ActivityTrialService` 已存在，领域服务只依赖规则树入口。
 
-2. group-buy-activity-domain/src/main/java/cn/xuele/activity/domain/model/valobj/GroupBuyActivityDiscountVO.java
-   目的：补回旧单体 isVisible() / isEnable() 业务语义。
+2. group-buy-activity-domain/src/main/java/cn/xuele/activity/domain/service/trial/engine/*
+   目的：确认 `IActivityTrialRuleEngine`、`ActivityTrialRuleEngine`、`ActivityTrialContext`、`AbstractActivityTrialSupport` 包结构和职责正确。
 
-3. 旧单体 xuele-group-buy-domain/src/main/java/cn/xuele/domain/activity/model/valobj/GroupBuyActivityDiscountVO.java
-   目的：对照 tagScope 可见/可参与规则。
+3. group-buy-activity-domain/src/main/java/cn/xuele/activity/domain/service/trial/node/*
+   目的：确认节点构造器依赖关系和路由顺序，避免 app 装配时接错链路。
 
-4. 旧单体 xuele-group-buy-domain/src/main/java/cn/xuele/domain/activity/service/trial/node/*
-   目的：参照旧规则树业务流程，但不照搬 Spring/Redis/Repository 混杂实现。
+4. group-buy-activity-app
+   目的：确认 app 层是否已有启动类、配置类和装配位置；domain 节点不能加 Spring 注解。
+
+5. group-buy-activity-infrastructure/src/main/java/cn/xuele/activity/infrastructure/adapter
+   目的：确认 `IActivityTrialControlPort` 和 `ITagQueryPort` 的实现位置，避免端口实现写到 domain。
+
+6. group-buy-tag-api/src/main/java/cn/xuele/api/tag/*
+   目的：如果本阶段要实现 `ITagQueryPort` Dubbo adapter，必须确认 activity-service 只依赖 tag-service 的 api 契约。
+
+7. 家环境 Maven/JDK 与本地仓库
+   目的：确认使用 JDK 21，且 `group-buy-common`、`group-buy-tag-service` 已成功 install 到当前 Maven 本地仓库。
 
 【下一步小任务】
-1. 新建 ActivityTrialContext，承载规则树上下文。
-2. 新建纯 domain 节点接口和抽象节点。
-3. 新建 RootNode、DataLoadNode、TrialControlNode、TagNode、MarketNode、EndNode。
-4. ActivityTrialRuleEngine 只作为规则树入口，不写完整大方法。
+1. 回家后先恢复 Maven/JDK 21 与本地仓库依赖解析。
+   - 要做什么：确认 `mvn -version` 使用 JDK 21，并重新 install `group-buy-common`、`group-buy-tag-service`。
+   - 为什么做：公司环境当前 Maven 为 3.3.9 + JDK 8，且实际本地仓库缺少 `group-buy-tag-api` 和 `group-buy-common-types`，导致 activity-infrastructure 找不到 `ITagQueryService`。
+   - 怎么做：在家环境分别对 `group-buy-common`、`group-buy-tag-service` 执行 `mvn clean install -DskipTests`，再刷新 activity-service Maven。
+   - 怎么验证：activity-infrastructure 能正常 import `cn.xuele.api.tag.ITagQueryService`。
+   - 业务修正点：先保证跨服务契约 jar 可解析，再写 RPC adapter，避免把依赖问题误判成代码问题。
+
+2. 完成 `ITagQueryPort` Dubbo adapter。
+   - 要做什么：新增 `cn.xuele.activity.infrastructure.adapter.port.TagQueryPort`，实现 domain 的 `ITagQueryPort`。
+   - 为什么做：`TagNode` 只应该依赖标签查询端口，不能直接依赖 tag-service 表、Redis bitmap 或内部模块。
+   - 怎么做：在 adapter 内使用 `@DubboReference(check = false)` 持有 `ITagQueryService` 远程代理，调用 `matchCrowdTag(TagQueryRequestDTO)` 后解析 `Response<TagQueryResponseDTO>`。
+   - 怎么验证：`TagQueryPort` 位于 infrastructure；activity-domain 不依赖 `group-buy-tag-api`；RPC 返回失败或 data 为空时抛 `AppException`，不能直接兜底为 `false`。
+   - 业务修正点：正式把旧单体活动直接查标签数据，升级为 activity-service 通过 tag-service RPC 契约消费标签能力。
+
+3. 新建 app 层 `DomainServiceConfig`。
+   - 要做什么：在 app 层手动装配折扣策略、节点链路、规则树入口和领域服务。
+   - 为什么做：domain 保持纯 Java，不加 `@Service` / `@Component`，对象生命周期交给 app 层。
+   - 怎么做：按 `EndNode -> MarketNode -> TagNode -> TrialControlNode -> DataLoadNode -> RootNode -> ActivityTrialRuleEngine -> ActivityTrialService` 顺序创建 Bean；折扣策略 Map 使用 `IDiscountCalculateService.marketPlan()` 作为 key。
+   - 怎么验证：domain 仍无 Spring 注解；策略 Map 的 key 必须是 `ZJ/MJ/N/ZK`，不能依赖 BeanName 偶然匹配。
+   - 业务修正点：把规则树编排和 Spring 装配隔离开，避免领域模型被框架污染。
+
+4. 异步多线程暂不进入本阶段实现。
+   - 要做什么：不要复制旧单体 `AbstractMultiThreadStrategyRouter`。
+   - 为什么做：旧实现把线程池能力塞进规则树父类，会让 domain 背上技术调度职责。
+   - 怎么做：先完成同步规则树闭环；后续如果要优化 DataLoadNode，只优化“查询 SKU”和“查询活动绑定 -> 查询活动优惠”这两条数据加载路径。
+   - 怎么验证：domain 中不出现 `ThreadPoolExecutor`、`CompletableFuture`、线程池配置。
+   - 业务修正点：把性能优化和业务规则迁移解耦，避免为了并发查询破坏六边形边界。
 
 【严格禁止】
 1. 不把完整试算链路写进 ActivityTrialRuleEngine 一个大方法。
@@ -964,6 +1064,8 @@ trigger 尚未提供 HTTP/Dubbo 入站适配器。
 4. TagNode 不访问 crowd_tags、crowd_tags_detail、Redis bitmap。
 5. DataLoadNode 不使用 DAO/Mapper，只使用 IActivityRepository。
 6. TrialControlNode 不直接读取配置中心实现，只使用 IActivityTrialControlPort。
+7. 不把旧单体 `ErrorNode` 单独迁回规则树。
+8. 不把旧单体多线程规则树父类直接迁到 common-design 或 domain。
 ```
 
 公司环境验收提醒：
@@ -983,13 +1085,16 @@ trigger 尚未提供 HTTP/Dubbo 入站适配器。
 
 【我当前需要完成的事情】
 1. 请先说明本次要检查哪些文件、为什么检查、本次检查目标是什么。
-2. 每次只推进一个小阶段。
-3. 如果涉及 Maven 依赖，先讲依赖设计，再改 POM。
-4. 如果涉及六边形架构，重点检查 domain 是否保持纯净。
-5. 如果涉及服务间调用，重点检查消费者只依赖 provider 的 api jar。
-6. 不要修改旧单体项目主链路；旧单体只作为阅读和迁移参考。
-7. 阶段完成前先做源码级验收，再做命令级验收。
-8. 必须按最佳实践推进，保留并升级旧项目亮点，不能为了最小实现牺牲规则树、策略模式、服务边界和面试表达价值。
+2. 先给一个简短小结，再给结论和问题。
+3. 每次只推进一个小阶段。
+4. 下一步任务必须按点拆开，并且每个点都要写清楚：要做什么、为什么、怎么做、怎么验证。
+5. 如果任务涉及业务逻辑，请按真实生产要求来写，主动修复原来不合理的边界、数据归属和职责混杂问题。
+6. 如果涉及 Maven 依赖，先讲依赖设计，再改 POM。
+7. 如果涉及六边形架构，重点检查 domain 是否保持纯净。
+8. 如果涉及服务间调用，重点检查消费者只依赖 provider 的 api jar。
+9. 不要修改旧单体项目主链路；旧单体只作为阅读和迁移参考。
+10. 阶段完成前先做源码级验收，再做命令级验收。
+11. 必须按最佳实践推进，保留并升级旧项目亮点，不能为了最小实现牺牲规则树、策略模式、服务边界和面试表达价值。
 
 【我遇到的问题】
 【填写当前卡点或目标，例如：需要先从旧单体阅读活动相关代码，判断 activity-service 的服务边界和表归属。】
@@ -1002,7 +1107,7 @@ trigger 尚未提供 HTTP/Dubbo 入站适配器。
 请始终记住：最佳实践优先，保留项目亮点，主动挖掘新亮点；迁移不是照搬，必须修正旧代码中不合理的边界。
 请你先不要直接写完整代码。
 请你先说明要检查哪些文件、为什么检查、检查目标是什么。
-检查后请按顺序输出：依赖设计是否合理 -> 本阶段源码实现是否完成 -> 边界是否正确 -> 命令验证是否需要执行 -> 剩余问题 -> 下一步小任务。
+检查后请按顺序输出：当前进度小结 -> 依赖设计是否合理 -> 本阶段源码实现是否完成 -> 边界是否正确 -> 命令验证是否需要执行 -> 剩余问题 -> 下一步小任务。
 每一步请先讲为什么，再讲我该怎么做，最后讲怎么验证。
 ```
 
