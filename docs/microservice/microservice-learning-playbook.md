@@ -268,13 +268,13 @@ Maven 依赖变更前必须说明：
 
 ## 11. 当前进度快照
 
-截至 2026-06-09：
+截至 2026-06-10：
 
 1. 阶段 0 已完成：整体规划完成，按业务能力纵向拆分。
 2. 阶段 1 已完成：`group-buy-common` 完成，复盘文档：`docs/microservice/04-stage-1-common-review.md`。
 3. 阶段 2 已完成：`group-buy-tag-service` 骨架完成，复盘文档：`docs/microservice/05-stage-2-tag-service-skeleton-review.md`。
 4. 阶段 3 已完成：tag-service Provider 侧迁移完成，检查点文档：`docs/microservice/06-stage-3-tag-service-checkpoint.md`。
-5. 阶段 4 已完成核心链路：`group-buy-activity-service` 已完成活动试算主流程拆分，检查点文档：`docs/microservice/10-stage-4-activity-service-checkpoint.md`。
+5. 阶段 4 已完成核心链路：`group-buy-activity-service` 已完成活动试算主流程拆分，检查点文档：`docs/microservice/07-stage-4-activity-service-checkpoint.md`。
 6. activity-service 已完成 API 契约：`IActivityTrialService.trial(ActivityTrialRequestDTO)`，请求 DTO 包含 `userId`、`goodsId`、`source`、`channel`，响应 DTO 包含价格、优惠、活动时间、可见性和可参与性。
 7. activity-domain 已完成活动试算规则树和领域入口：`IActivityService.marketTrial(...)`、`IActivityTrialRuleEngine`、`RootNode`、`DataLoadNode`、`TrialControlNode`、`TagNode`、`MarketNode`、`EndNode`。
 8. activity-domain 继续保持纯 Java，不依赖 MyBatis、Redis、Dubbo、Spring Web、Nacos 或线程池配置。
@@ -286,6 +286,14 @@ Maven 依赖变更前必须说明：
 14. Postman 已验证 `POST /api/activity/trial`：`userId=xuele`、`goodsId=9890001`、`source=s01`、`channel=c01`，返回 `deductionPrice=10.00`、`payPrice=90.00`、`visible=true`、`enable=true`。
 15. 当前联调依赖 tag-service Redis bitmap。测试标签 key 为 `crowd:tag:bitmap:RQ_KJHKL98UU78H66554GFDV`，`xuele` 的 offset 为 `19712872`。
 16. 公司环境曾遇到 Maven 3.3.9 + JDK 8、本地仓库缺少当前微服务产物的问题；公司环境默认不由 AI 执行编译和启动，以用户本地运行反馈为准。
+17. 阶段 5 已启动：已新增阶段 5 设计文档 `docs/microservice/08-stage-5-trade-service-split-plan.md`。
+18. 新微服务项目已创建 `group-buy-trade-service` 五模块骨架：`group-buy-trade-api`、`group-buy-trade-domain`、`group-buy-trade-infrastructure`、`group-buy-trade-trigger`、`group-buy-trade-app`。
+19. `group-buy-trade-api` 已完成交易 RPC 契约 `ITradeOrderService`，以及锁单、结算、退款、通知配置 DTO。
+20. 锁单请求 DTO 最终不传 `activityId`；后续由 trade-service 在锁单时调用 activity-service 重新试算，信任后端数据库配置和活动绑定关系。
+21. 结算请求 DTO 已包含 `payAmount` 和 `payTradeNo`，用于后续金额校验、支付流水追踪、对账、退款和防串单。
+22. 退款请求 DTO 已包含 `refundRequestNo`，用于表达退款动作自身的幂等键；后续可由调用方传入或由 trade-service 兜底生成。
+23. activity-service 试算响应已补 `activityId`、`activityName`、`validTime`，并完成 `TrialBalanceEntity`、`EndNode`、`ActivityTrialProvider`、`ActivityTrialController` 的返回链路透传。
+24. trade-service 当前只完成骨架和 API 契约；`trade-domain` 模型、状态机、仓储端口、activity Dubbo Consumer、SQL、Provider、Controller、锁单主链路尚未实现。
 
 当前阶段 4 遗留优化项：
 
@@ -301,24 +309,32 @@ Maven 依赖变更前必须说明：
 当前阶段：
 
 ```text
-阶段 4 收尾完成，下一步由用户决定先整理阶段 3 文档，还是进入阶段 5 trade-service 拆分。
+阶段 5 已启动，下一步继续 trade-service 业务模型与 domain 设计。
 ```
 
-可选下一步：
+已完成起步工作：
 
-1. 先优化阶段 3 文档。
-   - 已完成：阶段 3 文档已合并为 `docs/microservice/06-stage-3-tag-service-checkpoint.md`。
-   - 后续只在发现阶段 3 新事实或命名漂移时增量修正。
+1. 阶段 5 设计文档已新增：`docs/microservice/08-stage-5-trade-service-split-plan.md`。
+2. `group-buy-trade-service` 五模块骨架已创建。
+3. `group-buy-trade-api` 契约和 DTO 已完成。
+4. activity-service 试算响应已补锁单所需活动快照字段，并完成返回链路透传。
 
-2. 进入阶段 5：trade-service 拆分。
-   - 先复原交易锁单、支付、结算、退款、拼团队伍状态流转业务。
-   - 再设计 trade-service 如何通过 activity-service 试算接口和 tag-service 能力完成锁单前校验。
-   - 重点提前讨论幂等、唯一约束、订单状态机、库存并发、分布式锁、本地消息表和补偿任务。
+下一步接力任务：
 
-3. 阶段 4 后续优化。
-   - 为 tag-service 补标签任务执行或 bitmap 重建入口。
-   - 为 activity-service 补必要日志和可观测性。
-   - 重新定位 HTTP Controller 是否保留为本地调试入口，或后续迁移到网关入口。
+1. 从业务讲起，确认 trade-service 的核心领域模型。
+2. 设计 `TradeOrderEntity`、`GroupBuyTeamEntity`、`TradeLockCommandEntity`、`TradeSettlementCommandEntity`、`TradeRefundCommandEntity`。
+3. 设计 `TradeOrderStatusEnumVO`、`GroupBuyTeamStatusEnumVO`、`NotifyConfigVO`。
+4. 设计领域端口 `ITradeRepository`、`IActivityTrialPort`。
+5. 暂不直接实现锁单主链路；先把交易模型、状态机、幂等边界、仓储边界和 activity-service 调用边界讲清楚。
+
+后续仍需关注：
+
+- trade-service 自有 SQL 与唯一约束：`out_trade_no`、`biz_id`、`notify_task.uuid`。
+- 锁单前调用 activity-service 试算，并保存活动、商品、价格快照。
+- 支付结算金额校验、支付流水号防串单、重复回调幂等。
+- 退款请求幂等、退款状态组合和退款策略路由。
+- 本地消息表、MQ 投递、通知补偿任务和超时未支付退单任务。
+- 阶段 4 遗留优化仍存在，但当前主线优先推进阶段 5。
 
 ## 13. 新对话提示词模板
 
