@@ -63,6 +63,8 @@
 - 第一次确认：AI 说明本次要改什么、为什么改、涉及哪些文件、关键设计取舍、风险和验收方式，并明确哪些部分建议用户自己主导完成。
 - 第二次确认：用户明确通过第一次确认后，AI 复述最终改动清单和不会触碰的范围，再请求最后确认；只有用户第二次明确确认后，AI 才能修改文件。
 - 涉及业务迁移、架构边界、Maven 依赖、RPC 契约、并发一致性、规则树、策略模式、事务边界、MQ、分布式锁、幂等或技术亮点时，AI 必须先发出学习警示：这部分建议用户自己主导完成，AI 负责讲解、审查、提示风险和兜底；如果用户仍要求 AI 代做，也必须二次确认。
+- 涉及业务迁移、领域模型、聚合、端口、仓储、RPC 契约或状态机设计时，AI 必须先阅读旧单体真实代码和新微服务当前代码，再开始教学或给方案；不能只凭阶段文档、记忆或通用最佳实践推导。
+- 教学必须按“旧单体怎么写 -> 旧设计是否合理 -> 新微服务怎么改 -> 为什么这么改”的顺序展开。旧单体不合理时，要明确指出问题来自哪里、会造成什么风险、新设计如何修正。
 - 如果某一步只是重复劳动、机械迁移、字段搬运、PO/DAO/Mapper/DTO 成批创建、包名替换或复制粘贴型工作，不涉及复杂业务判断或关键技术取舍，AI 要先提醒用户“这部分主要是重复工作”；即使用户要求批量迁移，也仍然必须完成二次确认后再修改。
 - 简单检查可以简洁回答；复杂设计必须讲透业务和原因。
 - 每次推进一个小阶段，但小阶段要做到真实闭环，不用 Demo 标准糊弄过去。
@@ -84,7 +86,7 @@
 
 ## 4. 业务场景优先
 
-每次迁移旧单体能力前，必须先复原业务场景，而不是直接照着代码搬。
+每次迁移旧单体能力前，必须先阅读旧单体真实代码，再复原业务场景，而不是直接照着代码搬，也不能脱离旧代码空讲理想设计。
 
 需要讲清楚：
 
@@ -103,9 +105,21 @@
 新微服务里应该由哪个服务负责，为什么。
 ```
 
+每次讲解复杂业务时，必须同时给出：
+
+- 旧单体涉及的核心类、方法、表或 Mapper。
+- 旧单体的真实调用链和状态变更链路。
+- 哪些设计可以保留，原因是什么。
+- 哪些设计需要重构，原因是什么。
+- 新微服务设计和旧单体相比具体改变了什么。
+
 ## 5. 旧实现诊断规则
 
 旧单体不是标准答案。它提供业务语义和历史实现参考，但不能无脑照搬结构。
+
+旧实现诊断是必做步骤，不是可选背景阅读。
+
+AI 在给出新设计前，必须先打开并阅读相关旧单体源码。回答中要明确说明参考了哪些旧类或方法；如果暂时没有读取旧代码，必须先说明并补读，不能继续给确定性设计结论。
 
 每次阅读旧代码后，要主动分类：
 
@@ -124,6 +138,13 @@
 - 缺少幂等、唯一约束、状态机、并发控制、事务边界和消息一致性设计。
 - common 被当成公共垃圾桶，塞入只属于某个业务的模型或工具。
 - 配置、缓存 key、数据归属、故障边界没有说清楚。
+
+旧单体改造输出规则：
+
+- 不能只说“最佳实践应该如何”，必须先说“旧单体现在如何”。
+- 不能把旧单体的类名、聚合、实体、仓储方法机械映射到新微服务。
+- 旧单体中看起来像 DDD 但实际只是流程上下文、数据包或事务参数的对象，要明确指出，不要直接拔高为新服务聚合根。
+- 新设计必须解释它修正了旧实现的哪些问题，例如边界污染、职责过重、幂等缺失、事务边界不清、状态机不完整、通知任务不可靠等。
 
 ## 6. 最佳实践优先
 
@@ -217,14 +238,15 @@ api -> common
 
 每个小阶段按以下思路推进，但不要求每次机械输出完整模板。
 
-1. 业务复原：先讲旧单体的业务场景、流程、数据和状态。
-2. 旧实现诊断：指出哪些保留、哪些修正、哪些补齐。
-3. 新设计方案：说明服务边界、领域模型、端口、仓储、适配器、依赖变化。
-4. 最佳实践检查：补上扩展、性能、并发、一致性、故障语义。
-5. 落地实现：需要改代码时，先完成协作方式中的二次确认；用户要求先讲时只分析和给方案。
-6. 源码验收：检查真实类、方法、配置、Mapper、依赖方向，不只看编译结果。
-7. 命令验收：按环境执行或说明为什么暂不执行。
-8. 文档沉淀：阶段完成后写检查点或复盘，再进入下一阶段。
+1. 源码读取：先打开旧单体相关 Controller、Service、Domain Model、Repository、Mapper、SQL 和新微服务当前代码，确认真实实现。
+2. 业务复原：基于旧单体真实代码讲业务场景、流程、数据和状态。
+3. 旧实现诊断：指出哪些保留、哪些修正、哪些补齐，并说明对应旧代码位置。
+4. 新设计方案：说明服务边界、领域模型、端口、仓储、适配器、依赖变化。
+5. 最佳实践检查：补上扩展、性能、并发、一致性、故障语义。
+6. 落地实现：需要改代码时，先完成协作方式中的二次确认；用户要求先讲时只分析和给方案。
+7. 源码验收：检查真实类、方法、配置、Mapper、依赖方向，不只看编译结果。
+8. 命令验收：按环境执行或说明为什么暂不执行。
+9. 文档沉淀：阶段完成后写检查点或复盘，再进入下一阶段。
 
 重复工作分流：
 
@@ -238,6 +260,8 @@ api -> common
 - 如果目标是实现 Repository、Service、Controller、Provider、Job、Listener 等具体能力，必须打开源码检查。
 - 不能因为 Maven 编译通过就判断业务完成。
 - 要识别空实现、伪实现、TODO、错误兜底、边界泄漏和依赖污染。
+- 用户要求“校验、验收、检查我写的代码”时，AI 必须完整读取相关文件，而不是只看搜索命中的片段；涉及调用链时必须顺着入口、领域服务、端口、仓储、Mapper、DTO 映射逐层检查。
+- 验收必须对照旧单体和新微服务设计目标，说明：旧实现如何，新代码如何，差异是否合理，是否存在遗漏、误改或边界倒退。
 
 Maven 依赖变更前必须说明：
 
@@ -289,11 +313,13 @@ Maven 依赖变更前必须说明：
 17. 阶段 5 已启动：已新增阶段 5 设计文档 `docs/microservice/08-stage-5-trade-service-split-plan.md`。
 18. 新微服务项目已创建 `group-buy-trade-service` 五模块骨架：`group-buy-trade-api`、`group-buy-trade-domain`、`group-buy-trade-infrastructure`、`group-buy-trade-trigger`、`group-buy-trade-app`。
 19. `group-buy-trade-api` 已完成交易 RPC 契约 `ITradeOrderService`，以及锁单、结算、退款、通知配置 DTO。
-20. 锁单请求 DTO 最终不传 `activityId`；后续由 trade-service 在锁单时调用 activity-service 重新试算，信任后端数据库配置和活动绑定关系。
-21. 结算请求 DTO 已包含 `payAmount` 和 `payTradeNo`，用于后续金额校验、支付流水追踪、对账、退款和防串单。
+20. 锁单请求 DTO 当前保留 `activityId`，但它只表示用户期望参与的候选活动；最终活动、商品、价格、成团人数和有效期必须以 activity-service 重新试算返回为准，不能信任前端状态或价格。
+21. 结算请求 DTO 已统一为 `payAmount`、`payNo`、`payTime`，用于后续金额校验、支付流水追踪、对账、退款和防串单。
 22. 退款请求 DTO 已包含 `refundRequestNo`，用于表达退款动作自身的幂等键；后续可由调用方传入或由 trade-service 兜底生成。
 23. activity-service 试算响应已补 `activityId`、`activityName`、`validTime`，并完成 `TrialBalanceEntity`、`EndNode`、`ActivityTrialProvider`、`ActivityTrialController` 的返回链路透传。
-24. trade-service 当前只完成骨架和 API 契约；`trade-domain` 模型、状态机、仓储端口、activity Dubbo Consumer、SQL、Provider、Controller、锁单主链路尚未实现。
+24. trade-domain 已开始按锁单业务小步推进，当前已设计 `TradeLockCommandEntity`、`ActivityTrialEntity`、`TradeOrderEntity`、`GroupBuyTeamEntity`、`LockTypeEnumVO`、`GroupBuyLockAggregate`、`IActivityTrialPort`、锁单阶段的 `ITradeRepository.lockOrder(...)`。
+25. `group-buy-common-design` 已迁移旧单体 link 责任链框架：`LinkArmory`、`BusinessLinkedList`、`LinkedList`、`ILink`、`ILogicHandler`，包名为 `cn.xuele.common.design.framework.link`，供后续 trade 锁单规则链使用。
+26. trade-service 当前仍未实现 activity Dubbo Consumer、SQL、Provider、Controller 和锁单主链路。
 
 当前阶段 4 遗留优化项：
 
@@ -309,23 +335,26 @@ Maven 依赖变更前必须说明：
 当前阶段：
 
 ```text
-阶段 5 已启动，下一步继续 trade-service 业务模型与 domain 设计。
+阶段 5 已启动。当前只推进 trade-service 锁单业务，不继续扩展结算、退款和通知任务。
 ```
 
-已完成起步工作：
+已完成工作：
 
 1. 阶段 5 设计文档已新增：`docs/microservice/08-stage-5-trade-service-split-plan.md`。
 2. `group-buy-trade-service` 五模块骨架已创建。
 3. `group-buy-trade-api` 契约和 DTO 已完成。
 4. activity-service 试算响应已补锁单所需活动快照字段，并完成返回链路透传。
+5. trade-domain 锁单相关模型已初步完成：`TradeLockCommandEntity`、`ActivityTrialEntity`、`TradeOrderEntity`、`GroupBuyTeamEntity`、`LockTypeEnumVO`、`GroupBuyLockAggregate`。
+6. trade-domain 锁单相关端口已初步收敛：`IActivityTrialPort`、`ITradeRepository.lockOrder(...)`。
+7. common-design 已补 link 责任链框架，后续可用于 trade 锁单规则链。
 
 下一步接力任务：
 
-1. 从业务讲起，确认 trade-service 的核心领域模型。
-2. 设计 `TradeOrderEntity`、`GroupBuyTeamEntity`、`TradeLockCommandEntity`、`TradeSettlementCommandEntity`、`TradeRefundCommandEntity`。
-3. 设计 `TradeOrderStatusEnumVO`、`GroupBuyTeamStatusEnumVO`、`NotifyConfigVO`。
-4. 设计领域端口 `ITradeRepository`、`IActivityTrialPort`。
-5. 暂不直接实现锁单主链路；先把交易模型、状态机、幂等边界、仓储边界和 activity-service 调用边界讲清楚。
+1. 严格按新版 playbook，先回看旧单体锁单真实链路，再继续设计新 trade-service 锁单规则链。
+2. 旧单体锁单规则链是 `ActivityUsabilityRuleFilter -> UserTakeLimitRuleFilter -> TeamStockOccupyRuleFilter -> TradeRuleEndFilter`，但不能原样搬到新微服务。
+3. 新 trade-service 锁单规则链应按业务边界重设：activity-service 负责活动状态、时间、人群、价格和可参与性；trade-service 只负责交易侧幂等、参团队伍合法性、订单冲突、锁单聚合构建和落库边界。
+4. 推荐下一步先设计锁单规则链骨架：`TradeLockRuleFilterFactory`、`TradeLockRuleContext`、`LockIdempotentRuleFilter`、`ActivityTrialRuleFilter`、`TeamAvailableRuleFilter`、`LockBuildRuleFilter`。
+5. 暂缓 `UserTakeLimitRuleFilter` 和 `TeamStockOccupyRuleFilter`。用户限购需要进一步明确 activity-service 与 trade-service 的职责边界；Redis 团队库存抢占属于并发优化，等 DB 乐观更新主链路清楚后再设计。
 
 后续仍需关注：
 
