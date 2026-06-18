@@ -9,9 +9,9 @@
 核心边界：
 
 ```text
-trade-service 负责锁单、支付结算、退款、拼团队伍状态流转和交易补偿任务。
+trade-service 负责锁单、支付结算、退款、拼团队伍状态流转和交易事实事件记录。
 trade-service 拥有 group_buy_order、group_buy_order_list。
-notify_task 前期作为 trade-service 本地消息表保留，后续再评估是否拆到 notify-service。
+notify_task 不在锁单阶段引入；后续改为 trade-service 本地 trade_event_outbox + notify-service 通知任务表。
 trade-service 不直接访问 activity-service 的活动表、优惠表、SKU 表或标签能力。
 trade-service 锁单前通过 activity-service API / Dubbo 做活动试算和参与资格校验。
 trade-domain 保持纯 Java，不依赖 MyBatis、Redis、Dubbo、Spring Web、Nacos、MQ 或线程池配置。
@@ -59,9 +59,10 @@ MQ / Job：处理成团通知、退款补偿、超时未支付订单关闭。
   -> 写入退款通知或库存恢复任务
 
 补偿任务：
-定时扫描 notify_task
-  -> 执行 MQ 或 HTTP 通知
-  -> 成功、失败、重试状态落库
+trade-service 后续扫描 trade_event_outbox
+  -> 发布交易事实事件
+  -> notify-service 消费事件后执行 MQ 或 HTTP 通知
+  -> notify-service 维护通知成功、失败和重试状态
 ```
 
 ## 3. 服务边界
@@ -108,8 +109,11 @@ group_buy_order：
 group_buy_order_list：
 用户个人交易单，维护 user_id、order_id、team_id、活动快照、商品快照、价格快照、外部交易单号和订单状态。
 
+trade_event_outbox：
+后续在结算、退款、超时关闭等交易状态变化时引入，作为 trade-service 本地事务内的交易事实事件表。
+
 notify_task：
-前期作为 trade-service 本地消息表，承接成团通知、退款通知、库存恢复等可靠投递任务。
+不归 trade-service。后续由 notify-service 拥有，负责 HTTP / MQ 投递、重试、失败原因和通知状态。
 ```
 
 不归 trade-service 直接访问的数据：
@@ -161,7 +165,7 @@ visible、enable
 锁单和结算使用责任链表达规则校验。
 退款使用责任链 + 策略模式表达不同状态组合。
 group_buy_order 表示队伍，group_buy_order_list 表示用户个人订单。
-notify_task 作为本地消息任务表，适合作为可靠投递雏形。
+旧 notify_task 的可靠投递思想可以保留，但表边界要升级为 trade_event_outbox + notify-service notify_task。
 ```
 
 旧实现需要修正的问题：
@@ -250,7 +254,8 @@ COMPLETE -> CLOSE
 
 ```text
 补 trade-service 自有 SQL。
-明确唯一索引：out_trade_no、biz_id、notify_task.uuid。
+锁单阶段先明确唯一索引：team_id、order_id、out_trade_no、biz_id。
+后续结算、退款阶段再设计 trade_event_outbox 的 event_id、biz_id 唯一约束。
 ```
 
 第四小步：
