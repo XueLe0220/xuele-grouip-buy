@@ -20,7 +20,7 @@ trade-service 锁单前消费 activity-service 的链路放到阶段 5。
 
 ## 2. 业务场景
 
-活动试算解决的是用户浏览商品或进入拼团页时，系统根据用户、商品、渠道、活动、人群标签和优惠规则计算本次可见性、可参与性和预估支付价。
+活动试算解决的是用户浏览商品或进入拼团页时，系统根据用户、商品、渠道、活动、人群标签和优惠规则计算本次可见性、可参与性和预估应付金额。
 
 一次试算涉及的数据：
 
@@ -52,7 +52,7 @@ tag_id = RQ_KJHKL98UU78H66554GFDV
 tag_scope = 1,2
 ```
 
-`tag_scope = 1,2` 表示活动可见性和参与资格都受人群标签限制。用户未命中标签时，活动不可见、不可参与，优惠也不会生效；用户命中标签后，满减 `100 - 10` 生效，支付价为 `90.00`。
+`tag_scope = 1,2` 表示活动可见性和参与资格都受人群标签限制。用户未命中标签时，活动不可见、不可参与，优惠也不会生效；用户命中标签后，满减 `100 - 10` 生效，应付金额为 `90.00`。
 
 ## 3. 完成范围
 
@@ -84,7 +84,7 @@ group-buy-activity-service/group-buy-activity-app
 - `activity-trigger` 完成 Dubbo Provider 和用于本地验证的 HTTP Controller。
 - `activity-app` 完成启动类、运行配置、Dubbo / Nacos / MyBatis / datasource 配置和领域对象手动装配。
 - activity 相关建表脚本已经写入旧工作区和新微服务工作区。
-- Postman 已完成真实链路验证，返回 `deductionPrice=10.00`、`payPrice=90.00`、`visible=true`、`enable=true`。
+- Postman 已完成真实链路验证，返回 `deductionPrice=10.00`、`payableAmount=90.00`、`visible=true`、`enable=true`。
 
 ## 4. 当前源码结构
 
@@ -217,7 +217,7 @@ RootNode：规则树入口。
 DataLoadNode：加载商品、活动绑定、有效活动和优惠配置。
 TrialControlNode：处理降级、灰度、切量控制。
 TagNode：判断活动可见、可参与和优惠资格。
-MarketNode：路由优惠策略，计算优惠金额和支付金额。
+MarketNode：路由优惠策略，计算优惠金额和应付金额。
 EndNode：组装试算结果。
 ```
 
@@ -307,7 +307,7 @@ goodsId：商品ID
 goodsName：商品名称
 originalPrice：商品原价
 deductionPrice：优惠金额
-payPrice：试算支付价
+payableAmount：试算应付金额
 targetCount：成团目标人数
 startTime：活动开始时间
 endTime：活动结束时间
@@ -454,7 +454,7 @@ Content-Type: application/json
     "goodsName": "《手写MyBatis：渐进式源码实践》",
     "originalPrice": 100.00,
     "deductionPrice": 10.00,
-    "payPrice": 90.00,
+    "payableAmount": 90.00,
     "targetCount": 3,
     "startTime": "2024-12-07T10:19:40",
     "endTime": "2036-12-31T23:59:59",
@@ -483,7 +483,7 @@ Postman HTTP
 
 ```text
 deductionPrice = 0.00
-payPrice = 100.00
+payableAmount = 100.00
 visible = false
 enable = false
 ```
@@ -541,6 +541,6 @@ Dubbo QoS 端口冲突：本机多服务启动时需要规划 QoS 端口或关�
 
 联调时我们也验证了一个关键故障边界：标签 RPC 调用失败不能被当成 matched=false。false 只表示用户真实未命中标签；调用失败必须抛明确异常，否则会把系统故障伪装成用户资格不足。
 
-最终通过 Postman 验证了 HTTP -> activity-service -> tag-service Dubbo -> Redis bitmap -> 满减优惠计算的完整链路，测试用户 xuele 命中活动标签后，100 元商品满减 10 元，支付价为 90 元。
+最终通过 Postman 验证了 HTTP -> activity-service -> tag-service Dubbo -> Redis bitmap -> 满减优惠计算的完整链路，测试用户 xuele 命中活动标签后，100 元商品满减 10 元，应付金额为 90 元。
 ```
 

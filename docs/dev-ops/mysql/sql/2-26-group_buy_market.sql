@@ -197,7 +197,7 @@ CREATE TABLE `group_buy_order` (
   `channel` varchar(8) NOT NULL COMMENT '来源',
   `original_price` decimal(8,2) NOT NULL COMMENT '原始价格',
   `deduction_price` decimal(8,2) NOT NULL COMMENT '折扣金额',
-  `pay_price` decimal(8,2) NOT NULL COMMENT '支付价格',
+  `payable_amount` decimal(8,2) NOT NULL COMMENT '支付价格',
   `target_count` int NOT NULL COMMENT '目标数量',
   `complete_count` int NOT NULL COMMENT '完成数量',
   `lock_count` int NOT NULL COMMENT '锁单数量',
@@ -215,7 +215,7 @@ CREATE TABLE `group_buy_order` (
 LOCK TABLES `group_buy_order` WRITE;
 /*!40000 ALTER TABLE `group_buy_order` DISABLE KEYS */;
 
-INSERT INTO `group_buy_order` (`id`, `team_id`, `activity_id`, `source`, `channel`, `original_price`, `deduction_price`, `pay_price`, `target_count`, `complete_count`, `lock_count`, `status`, `valid_start_time`, `valid_end_time`, `notify_type`, `notify_url`, `create_time`, `update_time`)
+INSERT INTO `group_buy_order` (`id`, `team_id`, `activity_id`, `source`, `channel`, `original_price`, `deduction_price`, `payable_amount`, `target_count`, `complete_count`, `lock_count`, `status`, `valid_start_time`, `valid_end_time`, `notify_type`, `notify_url`, `create_time`, `update_time`)
 VALUES
 	(23,'29487599',100123,'s01','c01',100.00,20.00,80.00,3,0,2,0,'2025-04-05 14:54:47','2025-04-05 15:09:47','HTTP','http://127.0.0.1:8091/api/v1/test/group_buy_notify','2025-04-05 14:54:46','2025-04-05 14:56:23'),
 	(24,'15721600',100123,'s01','c01',100.00,20.00,80.00,3,0,1,0,'2025-04-05 15:18:29','2025-04-05 15:33:29','HTTP','http://127.0.0.1:8091/api/v1/test/group_buy_notify','2025-04-05 15:18:29','2025-07-12 11:42:36');
@@ -242,7 +242,7 @@ CREATE TABLE `group_buy_order_list` (
   `channel` varchar(8) NOT NULL COMMENT '来源',
   `original_price` decimal(8,2) NOT NULL COMMENT '原始价格',
   `deduction_price` decimal(8,2) NOT NULL COMMENT '折扣金额',
-  `pay_price` decimal(8,2) NOT NULL COMMENT '支付金额',
+  `payable_amount` decimal(8,2) NOT NULL COMMENT '支付金额',
   `status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '状态；0初始锁定、1消费完成、2用户退单',
   `out_trade_no` varchar(12) NOT NULL COMMENT '外部交易单号-确保外部调用唯一幂等',
   `out_trade_time` datetime DEFAULT NULL COMMENT '外部交易时间',
@@ -257,7 +257,7 @@ CREATE TABLE `group_buy_order_list` (
 LOCK TABLES `group_buy_order_list` WRITE;
 /*!40000 ALTER TABLE `group_buy_order_list` DISABLE KEYS */;
 
-INSERT INTO `group_buy_order_list` (`id`, `user_id`, `team_id`, `order_id`, `activity_id`, `start_time`, `end_time`, `goods_id`, `source`, `channel`, `original_price`, `deduction_price`, `pay_price`, `status`, `out_trade_no`, `out_trade_time`, `biz_id`, `create_time`, `update_time`)
+INSERT INTO `group_buy_order_list` (`id`, `user_id`, `team_id`, `order_id`, `activity_id`, `start_time`, `end_time`, `goods_id`, `source`, `channel`, `original_price`, `deduction_price`, `payable_amount`, `status`, `out_trade_no`, `out_trade_time`, `biz_id`, `create_time`, `update_time`)
 VALUES
 	(25,'xfg03','29487599','069645854815',100123,'2024-12-07 10:19:40','2029-12-07 10:19:40','9890001','s01','c01',100.00,20.00,80.00,0,'769515763172',NULL,'100123_xfg03_1','2025-04-05 14:54:46','2025-04-05 14:54:46'),
 	(26,'xfg04','29487599','663374201900',100123,'2024-12-07 10:19:40','2029-12-07 10:19:40','9890001','s01','c01',100.00,20.00,80.00,0,'727869517356',NULL,'100123_xfg04_1','2025-04-05 14:56:23','2025-04-05 14:56:23'),

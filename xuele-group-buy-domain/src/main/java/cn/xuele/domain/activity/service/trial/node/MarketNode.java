@@ -69,16 +69,16 @@ public class MarketNode extends AbstractGroupBuyMarketSupport {
 
         // 3. 执行核心计算
         boolean isUsable = dynamicContext.isEnable() && dynamicContext.isVisible();
-        BigDecimal payPrice = discountCalculateService.calculate(requestParameter.getUserId(),
+        BigDecimal payableAmount = discountCalculateService.calculate(requestParameter.getUserId(),
                 skuVO.getOriginalPrice(), groupBuyDiscount, isUsable);
 
         // 4. 计算优惠减免金额 (Deduction Price)
         // 减免额 = 原价 - 最终支付价
-        BigDecimal deductionPrice = skuVO.getOriginalPrice().subtract(payPrice);
+        BigDecimal deductionPrice = skuVO.getOriginalPrice().subtract(payableAmount);
 
         // 5. 将结果回填到 Context，供 EndNode 组装最终结果
         dynamicContext.setDeductionPrice(deductionPrice); // 优惠了多少
-        dynamicContext.setPayPrice(payPrice);             // 最终付多少
+        dynamicContext.setPayableAmount(payableAmount);             // 最终付多少
 
         return router(requestParameter, dynamicContext);
     }

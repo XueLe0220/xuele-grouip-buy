@@ -273,7 +273,13 @@ api -> common
 6. 落地实现：默认教学模式下需要改代码时，先完成协作方式中的二次确认；加速推进模式下按 A/B/C 类任务确认规则推进；用户要求先讲时只分析和给方案。
 7. 源码验收：检查真实类、方法、配置、Mapper、依赖方向，不只看编译结果。
 8. 命令验收：按环境执行或说明为什么暂不执行。
-9. 文档沉淀：阶段完成后写检查点或复盘，再进入下一阶段。
+9. 文档沉淀：从 2026-06-21 起，默认只更新本 playbook 的进度快照、接力任务和风险清单，不再额外新建项目拆解、阶段计划、检查点或复盘文档；除非用户明确要求，或某个设计需要长期留痕到独立文档。
+
+文档推进规则：
+
+- 本 playbook 是后续微服务改造的唯一接力文档，任务推进、阶段状态、下一步选择和遗留风险都优先写回这里。
+- 历史阶段文档继续作为参考资料保留，但后续普通推进不再新增同类拆解文档。
+- 如果新增独立文档，必须先说明为什么 playbook 不够承载、该文档后续如何维护，避免文档散落后过期。
 
 重复工作分流：
 
@@ -315,19 +321,19 @@ Maven 依赖变更前必须说明：
 阶段 3：tag-service 真实迁移
 阶段 4：activity-service 拆分
 阶段 5：trade-service 拆分
-阶段 6：settlement-service 拆分
-阶段 7：异步任务与 MQ 拆分
+阶段 6：payment-service / 支付适配演进
+阶段 7：trade_event_outbox、MQ relay 与 notify-service
 阶段 8：分布式锁和一致性
-阶段 9：配置中心与服务治理
-阶段 10：部署与可观测性
-阶段 11：文档与面试表达
+阶段 9：tag-service 用户画像、Kafka 事件流与 Agent 辅助标签治理
+阶段 10：project-agent-service 项目治理助手
+阶段 11：配置中心、部署、可观测性与面试表达
 ```
 
 阶段路线可以调整，但每次调整都要说明原因、收益和风险。
 
 ## 11. 当前进度快照
 
-截至 2026-06-10：
+截至 2026-06-21：
 
 1. 阶段 0 已完成：整体规划完成，按业务能力纵向拆分。
 2. 阶段 1 已完成：`group-buy-common` 完成，复盘文档：`docs/microservice/04-stage-1-common-review.md`。
@@ -342,19 +348,46 @@ Maven 依赖变更前必须说明：
 11. activity-app 已完成 `ActivityApplication`、`DomainServiceConfig`、datasource、MyBatis、Dubbo/Nacos、日志等运行配置。
 12. activity-service 已使用独立 schema `group_buy_activity`，自有表包括 `group_buy_activity`、`group_buy_discount`、`sc_sku_activity`、`sku`。
 13. activity -> tag-service 真实 Dubbo Consumer 链路已跑通，Nacos 中可见 tag-service 与 activity-service。
-14. Postman 已验证 `POST /api/activity/trial`：`userId=xuele`、`goodsId=9890001`、`source=s01`、`channel=c01`，返回 `deductionPrice=10.00`、`payPrice=90.00`、`visible=true`、`enable=true`。
+14. Postman 已验证 `POST /api/activity/trial`：`userId=xuele`、`goodsId=9890001`、`source=s01`、`channel=c01`，返回 `deductionPrice=10.00`、`payableAmount=90.00`、`visible=true`、`enable=true`。
 15. 当前联调依赖 tag-service Redis bitmap。测试标签 key 为 `crowd:tag:bitmap:RQ_KJHKL98UU78H66554GFDV`，`xuele` 的 offset 为 `19712872`。
 16. 公司环境曾遇到 Maven 3.3.9 + JDK 8、本地仓库缺少当前微服务产物的问题；公司环境默认不由 AI 执行编译和启动，以用户本地运行反馈为准。
 17. 阶段 5 已启动：已新增阶段 5 设计文档 `docs/microservice/08-stage-5-trade-service-split-plan.md`。
 18. 新微服务项目已创建 `group-buy-trade-service` 五模块骨架：`group-buy-trade-api`、`group-buy-trade-domain`、`group-buy-trade-infrastructure`、`group-buy-trade-trigger`、`group-buy-trade-app`。
 19. `group-buy-trade-api` 已完成交易 RPC 契约 `ITradeOrderService`，以及锁单、结算、退款、通知配置 DTO。
 20. 锁单请求 DTO 当前保留 `activityId`，但它只表示用户期望参与的候选活动；最终活动、商品、价格、成团人数和有效期必须以 activity-service 重新试算返回为准，不能信任前端状态或价格。
-21. 结算请求 DTO 已统一为 `payAmount`、`payNo`、`payTime`，用于后续金额校验、支付流水追踪、对账、退款和防串单。
+21. 结算请求 DTO 已统一为 `paidAmount`、`payNo`、`payTime`，用于后续金额校验、支付流水追踪、对账、退款和防串单。
 22. 退款请求 DTO 已包含 `refundRequestNo`，用于表达退款动作自身的幂等键；后续可由调用方传入或由 trade-service 兜底生成。
 23. activity-service 试算响应已补 `activityId`、`activityName`、`validTime`，并完成 `TrialBalanceEntity`、`EndNode`、`ActivityTrialProvider`、`ActivityTrialController` 的返回链路透传。
 24. trade-domain 已开始按锁单业务小步推进，当前已设计 `TradeLockCommandEntity`、`ActivityTrialEntity`、`TradeOrderEntity`、`GroupBuyTeamEntity`、`LockTypeEnumVO`、`GroupBuyLockAggregate`、`IActivityTrialPort`、锁单阶段的 `ITradeRepository.lockOrder(...)`。
 25. `group-buy-common-design` 已迁移旧单体 link 责任链框架：`LinkArmory`、`BusinessLinkedList`、`LinkedList`、`ILink`、`ILogicHandler`，包名为 `cn.xuele.common.design.framework.link`，供后续 trade 锁单规则链使用。
-26. trade-service 当前仍未实现 activity Dubbo Consumer、SQL、Provider、Controller 和锁单主链路。
+26. trade-service 锁单主链路已完成阶段性闭环，检查点文档：`docs/microservice/10-stage-5-trade-lock-checkpoint.md`。
+27. `group-buy-trade-trigger` 已完成 Dubbo Provider `TradeOrderProvider` 和本地验证 HTTP Controller `TradeOrderController`，锁单入口统一走 `ITradeLockOrderService.lockTradeOrder(...)`。
+28. trigger 层已完成锁单请求参数校验、`LockTradeOrderRequestDTO -> TradeLockCommandEntity` 转换，以及 `TradeOrderEntity -> LockTradeOrderResponseDTO` 返回映射。
+29. trade-domain 已完成锁单领域服务 `TradeLockOrderService`，通过责任链完成锁单业务规则编排，命中幂等时直接返回已有订单，未命中时构建锁单聚合并交由仓储落库。
+30. trade-domain 已完成锁单规则链：`LockIdempotentRuleFilter -> ActivityTrialRuleFilter -> UserTakeLimitRuleFilter -> TeamAvailableRuleFilter -> LockBuildRuleFilter`。
+31. `LockIdempotentRuleFilter` 按 `userId + outTradeNo` 查询已有交易单，作为重复锁单请求的业务幂等入口。
+32. `ActivityTrialRuleFilter` 通过 `IActivityTrialPort` 调用 activity-service 试算，activity-service 继续负责活动状态、活动时间、人群可见性、参与资格和价格计算；trade-service 保存试算返回的活动、商品和价格快照。
+33. `UserTakeLimitRuleFilter` 已纳入锁单链路，按 trade-service 自有订单表统计当前用户在活动下的待支付和已支付订单数量，判断是否达到 `takeLimitCount`。
+34. `TeamAvailableRuleFilter` 已完成参团队伍校验：队伍存在、活动一致、状态为拼团中、未过期、`lock_count < target_count`。
+35. `LockBuildRuleFilter` 已完成 `GroupBuyLockAggregate` 构建，区分开新团和参团，生成队伍快照与个人待支付订单快照。
+36. trade-infrastructure 已完成 `ActivityTrialPort`，通过 Dubbo Consumer 调用 `IActivityTrialService.trial(...)`，并将 activity-service DTO 转换为 trade-domain 的 `ActivityTrialEntity`。
+37. trade-infrastructure 已完成 `TradeRepository.lockOrder(...)` 事务落库：开新团时插入 `group_buy_order` 和 `group_buy_order_list`；参团时先通过 DB 条件更新增加 `lock_count`，再插入个人订单。
+38. trade-service 锁单落库阶段已补提交前防线：事务内复查幂等和限购，并依赖 `team_id`、`order_id`、`out_trade_no`、`biz_id` 唯一约束兜底并发重复写入。
+39. trade-service 支付结算主链路已接入，检查点文档：`docs/microservice/11-stage-5-trade-settlement-checkpoint.md`。
+40. 结算入口已支持 Dubbo Provider `ITradeOrderService.settlementTradeOrder(...)` 和本地 HTTP `POST /api/trade/settlement`。
+41. 发起支付准备入口已支持 Dubbo Provider `ITradeOrderService.prepareTradePayOrder(...)` 和本地 HTTP `POST /api/trade/pay/prepare`。
+42. 发起支付准备链路已形成简单闭环：trigger 校验 `userId/source/channel/outTradeNo`，domain 校验订单存在、来源渠道一致、订单为 `CREATE`、队伍为 `PROGRESS`、队伍未过期，repository 通过 `for update` 锁定个人订单后生成或复用 `paymentRequestNo`。
+43. 当前支付准备链路只返回 `paymentRequestNo`、`payableAmount`、`payExpireTime`、订单状态和队伍状态，不生成 `payNo`，不推进订单 `COMPLETE`，不增加 `complete_count`，也不调用真实 payment-service 或微信/支付宝等第三方接口。
+44. 结算请求 DTO 使用 `paidAmount`、`payNo`、`payTime`，已补齐旧单体缺失的支付金额校验、支付流水防串单和重复支付回调幂等语义。
+45. trade-domain 已完成结算规则链：`SettlementOrderLoadRuleFilter -> SettlementOrderStatusRuleFilter -> PaymentAmountRuleFilter -> PaymentNoRuleFilter -> TeamSettlementAvailableRuleFilter -> SettlementBuildRuleFilter`。
+46. trade-infrastructure 已完成 `ITradeRepository.settlementOrder(...)` 事务落库：个人订单 `CREATE -> COMPLETE` 并写支付信息，队伍 `complete_count + 1`，撞线时 `PROGRESS -> COMPLETE`。
+47. 发起支付阶段建议在 `group_buy_order_list.payment_request_no` 上增加唯一索引 `uq_payment_request_no`；结算阶段建议在 `group_buy_order_list.pay_no` 上增加唯一索引 `uq_pay_no`。
+48. trade-service 退单主链路已接入，支持 Dubbo Provider `ITradeOrderService.refundTradeOrder(...)` 和本地 HTTP `POST /api/trade/refund`。
+49. 退单链路已保留旧单体“规则链 + 状态组合路由”的表达价值，并修正旧单体空指针、策略 Bean 名称耦合、通知职责混入 domain 等问题。
+50. trade-domain 已完成退单规则链：`RefundOrderLoadRuleFilter -> RefundIdempotentRuleFilter -> RefundTypeRuleFilter -> RefundBuildRuleFilter`。
+51. 当前退单状态组合覆盖：未支付退单 `CREATE + PROGRESS -> CLOSE` 且队伍 `lock_count - 1`；已支付未成团退款 `COMPLETE + PROGRESS -> CLOSE` 且队伍 `lock_count - 1、complete_count - 1`；已支付已成团退款 `COMPLETE + COMPLETE/PARTIAL_REFUND -> CLOSE` 且队伍 `complete_count - 1`，队伍转 `PARTIAL_REFUND` 或 `FAIL`。
+52. trade-infrastructure 已完成 `ITradeRepository.refundOrder(...)` 本地事务落库，事务内通过 `for update` 锁定个人订单和队伍记录，重复 `CLOSE` 订单幂等返回。
+53. 当前退单链路不调用真实 payment-service 或第三方退款接口，不写 MQ，不生成 notify_task；退款流水、退款请求号持久化、trade_event_outbox、超时关单和通知补偿任务仍未实现。
 
 当前阶段 4 遗留优化项：
 
@@ -370,34 +403,57 @@ Maven 依赖变更前必须说明：
 当前阶段：
 
 ```text
-阶段 5 已启动。当前只推进 trade-service 锁单业务，不继续扩展结算、退款和通知任务。
+阶段 5 已完成 trade-service 锁单、支付准备、支付结算和退单主链路。不单独拆 settlement-service。
 ```
 
 已完成工作：
 
-1. 阶段 5 设计文档已新增：`docs/microservice/08-stage-5-trade-service-split-plan.md`。
+1. 历史阶段文档已保留为参考：`08-stage-5-trade-service-split-plan.md`、`10-stage-5-trade-lock-checkpoint.md`、`11-stage-5-trade-settlement-checkpoint.md`；后续普通推进不再新增同类拆解文档，只更新本 playbook。
 2. `group-buy-trade-service` 五模块骨架已创建。
 3. `group-buy-trade-api` 契约和 DTO 已完成。
 4. activity-service 试算响应已补锁单所需活动快照字段，并完成返回链路透传。
-5. trade-domain 锁单相关模型已初步完成：`TradeLockCommandEntity`、`ActivityTrialEntity`、`TradeOrderEntity`、`GroupBuyTeamEntity`、`LockTypeEnumVO`、`GroupBuyLockAggregate`。
-6. trade-domain 锁单相关端口已初步收敛：`IActivityTrialPort`、`ITradeRepository.lockOrder(...)`。
-7. common-design 已补 link 责任链框架，后续可用于 trade 锁单规则链。
+5. trade-service 锁单模型、端口、规则链、Provider、Controller、Activity Dubbo Consumer、Repository、DAO、Mapper 和 SQL 已形成主链路闭环。
+6. trade-service 发起支付准备链路已完成：校验可支付状态，通过 `for update` 锁定个人订单，生成或复用 `paymentRequestNo`，返回应付金额和支付有效期；当前只是支付前准备，不调用真实 payment-service 或第三方支付接口。
+7. trade-service 结算规则链、领域服务、Provider、本地 HTTP、Repository、DAO 和 Mapper 已形成主链路闭环。
+8. trade-service 退单规则链、领域服务、Provider、本地 HTTP、Repository、DAO 和 Mapper 已形成主链路闭环。
+9. common-design 已补 link 责任链框架，当前已用于 trade-service 锁单、结算和退单规则链。
 
 下一步接力任务：
 
-1. 严格按新版 playbook，先回看旧单体锁单真实链路，再继续设计新 trade-service 锁单规则链。
-2. 旧单体锁单规则链是 `ActivityUsabilityRuleFilter -> UserTakeLimitRuleFilter -> TeamStockOccupyRuleFilter -> TradeRuleEndFilter`，但不能原样搬到新微服务。
-3. 新 trade-service 锁单规则链应按业务边界重设：activity-service 负责活动状态、时间、人群、价格和可参与性；trade-service 只负责交易侧幂等、参团队伍合法性、订单冲突、锁单聚合构建和落库边界。
-4. 推荐下一步先设计锁单规则链骨架：`TradeLockRuleFilterFactory`、`TradeLockRuleContext`、`LockIdempotentRuleFilter`、`ActivityTrialRuleFilter`、`TeamAvailableRuleFilter`、`LockBuildRuleFilter`。
-5. 暂缓 `UserTakeLimitRuleFilter` 和 `TeamStockOccupyRuleFilter`。用户限购需要进一步明确 activity-service 与 trade-service 的职责边界；Redis 团队库存抢占属于并发优化，等 DB 乐观更新主链路清楚后再设计。
+1. 下一步优先推进 trade-service 后半段一致性设计：`trade_event_outbox` 表设计，并在结算成团、退单、订单关闭等事务内落交易事实事件。
+2. 退款增强的下一步是设计 `trade_refund_order` 或等价退款流水表，持久化 `refundRequestNo`、退款原因、退款金额、退款状态和支付流水关联，补齐退款动作级幂等。
+3. 支付链路仍有两条可选路线：A. 设计独立 payment-service，让 trade-service 通过端口用 `paymentRequestNo` 创建支付单；B. 先做轻量内部支付准备能力，只维护支付请求记录和状态，不接第三方支付接口。
+4. 如果选择 payment-service，必须先讲清 payment-service 是否真的需要独立拆分、它拥有哪些数据、是否对接第三方、和 trade-service 的幂等/回调/退款边界如何划分。
+5. 如果选择轻量内部支付准备，优先补齐 `payment_request_no` 唯一约束、支付准备状态、支付请求幂等和过期语义，保持不接第三方接口。
+6. 结算已完成主链路，但上线前需要确保数据库执行 `uq_payment_request_no(payment_request_no)` 和 `uq_pay_no(pay_no)` 唯一索引。
+7. 本轮仍不扩展超时关单、Redis 队伍名额抢占、MQ 投递和通知补偿。
+8. 后续任务推进完成后只更新本 playbook 的进度快照和接力任务，除非用户明确要求，不再输出新的项目拆解文档。
+
+秋招增强任务池：
+
+1. 目标定位：在 2026 年秋招前，把项目从“微服务拆分练习”打磨成“微服务交易系统 + 事件驱动用户画像 + 任务型 Agent 工程化”的组合项目；重点面向 ToB、ERP、制造业、互联网中厂和中小厂后端岗位表达。
+2. 第一优先级是 tag-service 用户画像增强：补齐“用户标签从哪里来、怎么打、怎么解释”的业务闭环，不只停留在 Redis bitmap 查询。
+3. 用户画像推荐链路：`业务事件 -> Kafka -> 用户行为特征聚合 -> 标签规则引擎 -> tag-service 标签表/bitmap -> activity-service 人群判断`。
+4. 可消费的业务事件包括：`activity_trial`、`trade_locked`、`pay_prepared`、`order_paid`、`team_completed`、`refund_requested`、`notify_failed`。
+5. 可沉淀的用户特征包括：近 7/30 天试算次数、锁单次数、支付转化率、优惠敏感度、参团偏好、成团成功率、退款倾向、活跃时间段、支付准备后未支付次数。
+6. 可生成的标签包括：新用户、高优惠敏感用户、高转化拼团用户、频繁试算未支付用户、退款风险用户、高价值用户、沉默用户。
+7. Agent 在用户画像链路中的边界：Agent 不直接参与核心交易状态流转，也不实时决定用户是否可参与活动；Agent 主要用于标签规则建议、用户画像解释、运营策略复盘和标签效果分析。
+8. 用户画像 Agent 的推荐能力：运营输入“找高优惠敏感用户”时，Agent 基于已有特征和规则模板给出标签规则建议，并说明命中原因、风险和可回放验证方式。
+9. 用户画像 Agent 的解释能力：查询某个用户为什么命中某标签时，Agent 读取用户特征、标签规则和历史事件，输出可审计解释，而不是只返回大模型主观判断。
+10. 第二优先级是 project-agent-service：作为独立工程治理助手，读取 playbook、代码结构、接口契约、SQL、状态机和 Git diff，辅助理解业务、生成 Mermaid 状态机、检查改造进度。
+11. project-agent-service 后续可扩展只读运维工具：检查云端服务器中 MySQL、Redis、Nacos、Kafka、Dubbo 服务状态，读取健康指标、端口、日志摘要和 Kafka 消费积压。
+12. project-agent-service 的安全边界：默认只读；涉及重启服务、清理数据、修改配置、执行 SQL 等危险操作必须人工确认；工具调用要有日志和审计。
+13. 7 月下旬前优先做可演示小闭环：Kafka 行为事件模型、用户特征聚合、标签规则落库/bitmap 更新、Agent 标签解释、project-agent 基于 playbook 的业务问答和状态机输出。
+14. 8 月底到 9 月初前再补工程深度：trade_event_outbox 可靠投递、Kafka relay、标签规则版本化和回放、project-agent 中间件健康检查、消费积压诊断、面试表达整理。
+15. 面试表达重点：不是“我接了大模型接口”，而是“核心交易链路保持稳定可审计，Agent 放在运营辅助和工程治理场景，通过工具调用读取真实数据和文档，提升画像解释、规则治理和项目维护效率”。
 
 后续仍需关注：
 
 - trade-service 自有 SQL 与唯一约束：锁单阶段关注 `team_id`、`order_id`、`out_trade_no`、`biz_id`；后续结算、退款阶段再设计 `trade_event_outbox.event_id`、`trade_event_outbox.biz_id`。
 - 锁单前调用 activity-service 试算，并保存活动、商品、价格快照。
 - 支付结算金额校验、支付流水号防串单、重复回调幂等。
-- 退款请求幂等、退款状态组合和退款策略路由。
-- 本地消息表、MQ 投递、通知补偿任务和超时未支付退单任务。
+- 退款请求号持久化、退款流水表、退款金额和支付流水关联。
+- 本地消息表、MQ 投递、通知补偿任务和超时未支付关单任务。
 - 阶段 4 遗留优化仍存在，但当前主线优先推进阶段 5。
 
 ## 13. 新对话提示词模板
@@ -418,6 +474,7 @@ Maven 依赖变更前必须说明：
 6. 服务之间只通过 api 契约通信，不共享 DAO、Mapper、PO、Repository 或 Redis key。
 7. 凡涉及代码、配置、POM、规则文档或阶段文档修改，必须二次确认；即使用户要求修或实现，也不能跳过确认直接推进。
 8. 涉及复杂业务、架构边界、RPC 契约、规则树、策略模式、并发一致性、幂等、MQ、分布式锁等技术亮点时，AI 必须先警示用户尽量自己主导完成，AI 负责讲解、审查、提示风险和兜底。
+9. 后续任务推进默认只更新 playbook 的进度快照、接力任务和风险清单，不再额外输出项目拆解、阶段计划、检查点或复盘文档，除非我明确要求。
 
 当前进度：
 【粘贴 docs/microservice/microservice-learning-playbook.md 的“当前进度快照”和“当前接力任务”中必要部分】
@@ -426,9 +483,9 @@ Maven 依赖变更前必须说明：
 【填写本次要做的小阶段或卡点】
 ```
 
-## 14. 阶段复盘模板
+## 14. Playbook 内复盘模板
 
-阶段完成后再复盘，不要每次普通推进都套模板。
+仅当用户明确要求复盘，或某个阶段需要在 playbook 内沉淀面试表达时使用。默认不要新建独立复盘文档，也不要每次普通推进都套模板。
 
 ```text
 1. 本阶段完成了什么

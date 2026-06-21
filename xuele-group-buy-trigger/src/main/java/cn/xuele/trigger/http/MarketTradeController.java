@@ -139,7 +139,7 @@ public class MarketTradeController implements IMarketTradeService {
                             .goodsName(trialBalance.getGoodsName())
                             .originalPrice(trialBalance.getOriginalPrice())
                             .deductionPrice(trialBalance.getDeductionPrice())
-                            .payPrice(trialBalance.getPayPrice())
+                            .payableAmount(trialBalance.getPayableAmount())
                             .outTradeNo(requestDTO.getOutTradeNo())
                             .notifyConfigVO(
                                     NotifyConfigVO.builder()
@@ -283,7 +283,7 @@ public class MarketTradeController implements IMarketTradeService {
                         .orderId(order.getOrderId())
                         .originalPrice(order.getOriginalPrice())
                         .deductionPrice(order.getDeductionPrice())
-                        .payPrice(order.getPayPrice())
+                        .payableAmount(order.getPayableAmount())
                         .tradeOrderStatus(order.getTradeOrderStatusEnumVO().getCode())
                         .teamId(order.getTeamId())
                         .build())

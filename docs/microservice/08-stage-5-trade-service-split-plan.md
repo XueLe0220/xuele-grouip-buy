@@ -135,7 +135,7 @@ trade-service -> activity-service
 
 ```text
 goodsId、goodsName
-originalPrice、deductionPrice、payPrice
+originalPrice、deductionPrice、payableAmount
 targetCount、startTime、endTime
 visible、enable
 ```
@@ -176,7 +176,7 @@ TradeLockOrderService 构造 TradeLockRuleCommandEntity 时没有传 teamId，�
 out_trade_no 注释用于幂等，但表结构没有唯一索引。
 biz_id 代码里按唯一键冲突处理，但表结构也没有唯一索引。
 queryGroupBuyOrderRecordByOutTradeNo 方法名说查未支付订单，SQL 实际没有 status = 0 条件。
-幂等查询返回字段缺少 pay_price。
+幂等查询返回字段缺少 payable_amount。
 支付结算接口没有金额入参，无法做支付金额校验。
 重复支付回调会因 status = 0 更新不到而失败，不是幂等成功。
 退款策略枚举和 Spring Bean 名称不一致，已支付未成团、已支付已成团退款可能路由失败。

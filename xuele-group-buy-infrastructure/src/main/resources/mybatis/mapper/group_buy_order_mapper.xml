@@ -10,7 +10,7 @@
         <result column="channel" property="channel"/>
         <result column="original_price" property="originalPrice"/>
         <result column="deduction_price" property="deductionPrice"/>
-        <result column="pay_price" property="payPrice"/>
+        <result column="payable_amount" property="payableAmount"/>
         <result column="target_count" property="targetCount"/>
         <result column="complete_count" property="completeCount"/>
         <result column="lock_count" property="lockCount"/>
@@ -25,11 +25,11 @@
 
     <insert id="insert" parameterType="cn.xuele.infrastructure.dao.po.GroupBuyOrder">
         insert into group_buy_order(team_id, activity_id, source, channel, original_price,
-                                    deduction_price, pay_price, target_count, complete_count,
+                                    deduction_price, payable_amount, target_count, complete_count,
                                     lock_count, status, valid_start_time, valid_end_time, notify_type, notify_url,
                                     create_time, update_time)
         values (#{teamId}, #{activityId}, #{source}, #{channel}, #{originalPrice},
-                #{deductionPrice}, #{payPrice}, #{targetCount}, #{completeCount},
+                #{deductionPrice}, #{payableAmount}, #{targetCount}, #{completeCount},
                 #{lockCount}, 0, #{validStartTime}, #{validEndTime}, #{notifyType}, #{notifyUrl}, now(), now())
     </insert>
 

@@ -31,13 +31,13 @@ public class ZJCalculateService extends AbstractDiscountCalculateService {
         BigDecimal deductionAmount = new BigDecimal(marketExpr.trim());
 
         // 2. 计算：原价 - 减免额
-        BigDecimal payPrice = originalPrice.subtract(deductionAmount);
+        BigDecimal payableAmount = originalPrice.subtract(deductionAmount);
 
         // 3. 兜底校验：最低支付 0.01 元
-        if (payPrice.compareTo(BigDecimal.ZERO) <= 0) {
+        if (payableAmount.compareTo(BigDecimal.ZERO) <= 0) {
             return new BigDecimal("0.01");
         }
 
-        return payPrice;
+        return payableAmount;
     }
 }

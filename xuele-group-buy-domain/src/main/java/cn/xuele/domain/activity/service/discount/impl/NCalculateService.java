@@ -28,13 +28,13 @@ public class NCalculateService extends AbstractDiscountCalculateService {
         String marketExpr = groupBuyDiscount.getMarketExpr();
 
         // 2. 直接将其转换为 BigDecimal 作为最终价格
-        BigDecimal payPrice = new BigDecimal(marketExpr.trim());
+        BigDecimal payableAmount = new BigDecimal(marketExpr.trim());
 
         // 3. 即使是N元购，也建议做一个最小支付金额校验，防止运营配成 0 或负数
-        if (payPrice.compareTo(BigDecimal.ZERO) <= 0) {
+        if (payableAmount.compareTo(BigDecimal.ZERO) <= 0) {
             return new BigDecimal("0.01");
         }
 
-        return payPrice;
+        return payableAmount;
     }
 }

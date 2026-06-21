@@ -487,10 +487,10 @@ activity-service
 
 ```text
 Redis bitmap 未初始化时：
-activity 返回 visible=false、enable=false、deductionPrice=0.00、payPrice=100.00。
+activity 返回 visible=false、enable=false、deductionPrice=0.00、payableAmount=100.00。
 
 Redis bitmap 补充 xuele 命中位后：
-activity 返回 visible=true、enable=true、deductionPrice=10.00、payPrice=90.00。
+activity 返回 visible=true、enable=true、deductionPrice=10.00、payableAmount=90.00。
 ```
 
 这说明：

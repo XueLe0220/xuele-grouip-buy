@@ -47,13 +47,13 @@ public class MJCalculateService extends AbstractDiscountCalculateService {
         }
 
         // 4. 计算优惠后金额
-        BigDecimal payPrice = originalPrice.subtract(discountAmount);
+        BigDecimal payableAmount = originalPrice.subtract(discountAmount);
 
         // 5. 兜底策略：防止金额为负或0，最低支付0.01
-        if (payPrice.compareTo(BigDecimal.ZERO) <= 0) {
+        if (payableAmount.compareTo(BigDecimal.ZERO) <= 0) {
             return new BigDecimal("0.01");
         }
 
-        return payPrice;
+        return payableAmount;
     }
 }

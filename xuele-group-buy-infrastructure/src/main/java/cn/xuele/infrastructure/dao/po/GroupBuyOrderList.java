@@ -61,7 +61,7 @@ public class GroupBuyOrderList {
     private BigDecimal deductionPrice;
 
     /** 实际金额 */
-    private BigDecimal payPrice;
+    private BigDecimal payableAmount;
 
     /** 订单状态：0-锁单成功(待支付)，1-支付成功 */
     private Integer status;

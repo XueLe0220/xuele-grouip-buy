@@ -33,13 +33,13 @@ public class ZKCalculateService extends AbstractDiscountCalculateService {
 
 
         // 2. 计算：原价 * 折扣率
-        BigDecimal payPrice = originalPrice.multiply(discountRate).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal payableAmount = originalPrice.multiply(discountRate).setScale(2, RoundingMode.HALF_UP);
 
         // 3. 兜底校验：最低支付 0.01 元
-        if (payPrice.compareTo(BigDecimal.ZERO) <= 0) {
+        if (payableAmount.compareTo(BigDecimal.ZERO) <= 0) {
             return new BigDecimal("0.01");
         }
 
-        return payPrice;
+        return payableAmount;
     }
 }

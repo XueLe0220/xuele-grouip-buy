@@ -40,7 +40,7 @@ public class GroupBuyOrder {
     /** 折扣金额 */
     private BigDecimal deductionPrice;
     /** 支付价格 */
-    private BigDecimal payPrice;
+    private BigDecimal payableAmount;
     /** 目标数量 */
     private Integer targetCount;
     /** 完成数量 */

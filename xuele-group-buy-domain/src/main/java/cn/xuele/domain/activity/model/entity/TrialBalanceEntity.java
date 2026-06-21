@@ -33,11 +33,11 @@ public class TrialBalanceEntity {
     /** 原始价格（划线价） */
     private BigDecimal originalPrice;
 
-    /** 优惠金额（抵扣金额，即：原价-支付价） */
+    /** 优惠金额（抵扣金额，即：原价-应付金额） */
     private BigDecimal deductionPrice;
 
-    /** 最终支付价格 */
-    private BigDecimal payPrice;
+    /** 最终应付金额 */
+    private BigDecimal payableAmount;
 
     /** 拼团目标成团数量 */
     private Integer targetCount;

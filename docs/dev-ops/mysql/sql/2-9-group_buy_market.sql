@@ -191,7 +191,7 @@ CREATE TABLE `group_buy_order` (
   `channel` varchar(8) NOT NULL COMMENT '来源',
   `original_price` decimal(8,2) NOT NULL COMMENT '原始价格',
   `deduction_price` decimal(8,2) NOT NULL COMMENT '折扣金额',
-  `pay_price` decimal(8,2) NOT NULL COMMENT '支付价格',
+  `payable_amount` decimal(8,2) NOT NULL COMMENT '支付价格',
   `target_count` int(5) NOT NULL COMMENT '目标数量',
   `complete_count` int(5) NOT NULL COMMENT '完成数量',
   `lock_count` int(5) NOT NULL COMMENT '锁单数量',
@@ -205,7 +205,7 @@ CREATE TABLE `group_buy_order` (
 LOCK TABLES `group_buy_order` WRITE;
 /*!40000 ALTER TABLE `group_buy_order` DISABLE KEYS */;
 
-INSERT INTO `group_buy_order` (`id`, `team_id`, `activity_id`, `source`, `channel`, `original_price`, `deduction_price`, `pay_price`, `target_count`, `complete_count`, `lock_count`, `status`, `create_time`, `update_time`)
+INSERT INTO `group_buy_order` (`id`, `team_id`, `activity_id`, `source`, `channel`, `original_price`, `deduction_price`, `payable_amount`, `target_count`, `complete_count`, `lock_count`, `status`, `create_time`, `update_time`)
 VALUES
 	(7,'64675056',100123,'s01','c01',100.00,90.00,0.00,3,3,0,0,'2025-01-11 15:13:08','2025-01-11 15:13:47'),
 	(8,'31724477',100123,'s01','c01',100.00,90.00,0.00,3,0,3,0,'2025-01-11 16:02:23','2025-01-11 16:06:49'),

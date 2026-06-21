@@ -43,8 +43,8 @@ public class PayDiscountEntity {
     /** 折扣金额 */
     private BigDecimal deductionPrice;
 
-    /** 支付金额 */
-    private BigDecimal payPrice;
+    /** 应付金额 */
+    private BigDecimal payableAmount;
 
     /** 外部交易单号 */
     private String outTradeNo;
