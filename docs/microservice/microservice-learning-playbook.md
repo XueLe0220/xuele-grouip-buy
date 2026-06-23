@@ -451,6 +451,7 @@ Maven 依赖变更前必须说明：
 
 - trade-service 自有 SQL 与唯一约束：锁单阶段关注 `team_id`、`order_id`、`out_trade_no`、`biz_id`；后续结算、退款阶段再设计 `trade_event_outbox.event_id`、`trade_event_outbox.biz_id`。
 - 锁单前调用 activity-service 试算，并保存活动、商品、价格快照。
+- 锁单 Redis 参团队伍双指针已从 Redisson `RAtomicLong + CAS` 升级为 Lua 原子脚本，`reserve/recover` 的读取、初始化、判满、占位、恢复防重和过期设置已合并到 Redis 内部一次执行；详细演进见 `docs/microservice/12-trade-lock-redis-evolution.md`。
 - 支付结算金额校验、支付流水号防串单、重复回调幂等。
 - 退款请求号持久化、退款流水表、退款金额和支付流水关联。
 - 本地消息表、MQ 投递、通知补偿任务和超时未支付关单任务。
